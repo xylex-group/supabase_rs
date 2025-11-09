@@ -30,8 +30,8 @@ pub fn headers(client: &SupabaseClient) -> HashMap<String, String> {
     let mut headers: HashMap<String, String> = HashMap::new();
 
     // insert the headers
-    headers.insert("apiKey".to_string(), client.api_key.clone());
-    headers.insert("Content-Type".to_string(), "application/json".to_string());
+    headers.insert("apiKey".to_owned(), client.api_key.clone());
+    headers.insert("Content-Type".to_owned(), "application/json".to_owned());
 
     // return the headers
     headers

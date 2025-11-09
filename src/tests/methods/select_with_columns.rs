@@ -34,5 +34,5 @@ pub async fn select_with_columns() {
     };
     let response: Result<(), String> = select_filter_columns_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("Select with columns operation should succeed");
 }

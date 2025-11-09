@@ -29,5 +29,5 @@ pub async fn delete() {
     };
     let response: Result<(), String> = delete_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("Delete operation failed")
 }

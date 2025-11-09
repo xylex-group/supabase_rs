@@ -16,7 +16,7 @@ impl Headers {
     }
 
     pub fn insert(&mut self, key: &str, value: &str) {
-        self.headers.insert(key.to_string(), value.to_string());
+        self.headers.insert(key.to_owned(), value.to_owned());
     }
 
     pub fn get_headers(&self) -> HashMap<String, String> {
@@ -64,6 +64,6 @@ impl HeadersTypes {
 
 impl From<HeadersTypes> for HeaderName {
     fn from(value: HeadersTypes) -> Self {
-        HeaderName::from_bytes(value.as_str().as_bytes()).unwrap()
+        HeaderName::from_bytes(value.as_str().as_bytes()).expect("Invalid header name")
     }
 }

@@ -423,6 +423,7 @@ pub mod request;
 pub mod routing;
 pub mod select;
 pub mod success;
+#[cfg(test)]
 pub mod tests;
 pub mod type_gen;
 pub mod update;
@@ -586,13 +587,13 @@ impl SupabaseClient {
         Ok(Self {
             url: supabase_url.into(),
             api_key: private_key.into(),
-            schema: "public".to_string(), // default schema
+            schema: "public".to_owned(), // default schema
             client,
         })
     }
 
     pub fn schema(mut self, schema: &str) -> Self {
-        self.schema = schema.to_string();
+        self.schema = schema.to_owned();
         self
     }
 

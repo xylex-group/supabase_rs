@@ -30,5 +30,5 @@ pub async fn select_with_count() {
     };
     let response: Result<(), String> = select_with_count_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("Select with count operation should succeed");
 }

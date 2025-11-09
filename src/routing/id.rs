@@ -52,7 +52,7 @@ impl SupabaseClient {
                     let id: String = response[0]["id"].to_string();
                     Ok(id)
                 } else {
-                    Err("No matching record found".to_string())
+                    Err("No matching record found".to_owned())
                 }
             }
             Err(error) => Err(error),

@@ -38,5 +38,5 @@ pub async fn update_with_column() {
     };
     let response: Result<(), String> = update_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("Update with column operation should succeed");
 }
