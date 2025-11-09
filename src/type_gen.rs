@@ -275,8 +275,8 @@ pub async fn generate_supabase_types(
     }
     let mut file: File = OpenOptions::new()
         .create(true)
-        .write(true)
         .truncate(true)
+        .write(true)
         .open("src/supabase_types.rs")
         .unwrap();
     file.write_all(output.as_bytes()).unwrap();
