@@ -8,9 +8,11 @@ pub async fn insert() {
         // Usage example
         let response_inner: Result<String, String> = supabase_client
             .insert(
-                "test",
+                "users",
                 json!({
-                    "dog": "what da dog doing"
+                    "email": "test@example.com",
+                    "username": "testuser",
+                    "age": 25
                 }),
             )
             .await;

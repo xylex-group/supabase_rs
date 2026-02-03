@@ -3,3 +3,5 @@ target/
 test.py
 Cargo.lock
 main.rs
+supabase/.branches
+supabase/.temp

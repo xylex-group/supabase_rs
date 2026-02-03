@@ -10,8 +10,8 @@ pub async fn select_with_count_and_filter() {
         // Usage example
 
         let response_inner: Result<Vec<Value>, String> = supabase_client
-            .select("test")
-            .eq("dog", "what da dog doing")
+            .select("users")
+            .eq("is_active", "true")
             .count()
             .execute()
             .await;

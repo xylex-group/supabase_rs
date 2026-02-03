@@ -8,7 +8,7 @@ pub async fn select() {
         // Usage example
 
         let response_inner: Result<Vec<Value>, String> =
-            supabase_client.select("test").execute().await;
+            supabase_client.select("users").execute().await;
 
         match response_inner {
             Ok(_) => Ok(()),

@@ -1,24 +1,48 @@
-This directory contains integration-like tests that require a live Supabase project.
+This directory contains integration tests that require a live Supabase instance.
 
-To run them locally, export the following environment variables or create a `.env` file:
+## Local Setup (Recommended)
 
+Install [Supabase CLI](https://github.com/supabase/cli#install-the-cli) and Docker, then:
+
+```bash
+supabase start
 ```
-SUPABASE_URL=...
-SUPABASE_KEY=...
+
+Create `.env` in project root:
+```env
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
 ```
 
-If you only want to run pure unit tests (no network), you can filter by `unit_`:
-
+Run tests:
+```bash
+supabase db reset && cargo test
 ```
+
+> **Note:** `db reset` re-seeds the database. Some tests consume seeded rows.
+
+## Remote Setup
+
+Create `.env` in project root:
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-key
+```
+
+Run tests:
+```bash
+cargo test
+```
+
+## Unit Tests Only
+
+```bash
 cargo test unit_
 ```
-# adding tests
 
-base.rs will contain a call to each test in the /methods dir
+## Adding Tests
 
-to add a new test:
-- add a new `METHOD_NAME.rs` in /methods
-- add the `.rs` file to `mod.rs` 
-- import the test in `base.rs` 
-- run the test in the `methods` mod under a `#[tokio::test]` macro
-- ?? success
+- Add `METHOD_NAME.rs` in `/methods`
+- Add to `mod.rs`
+- Import in `base.rs`
+- Use `#[tokio::test]` macro

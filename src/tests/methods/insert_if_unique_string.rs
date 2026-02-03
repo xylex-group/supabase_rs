@@ -10,9 +10,10 @@ pub async fn insert_if_unique_string() {
 
         let response_inner: Result<String, String> = supabase_client
             .insert_if_unique(
-                "test",
+                "users",
                 json!({
-                    "dog": random_string,
+                    "username": format!("unique_str_{}", random_string),
+                    "email": format!("unique_{}@test.com", random_string)
                 }),
             )
             .await;

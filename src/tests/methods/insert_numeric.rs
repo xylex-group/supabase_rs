@@ -8,9 +8,10 @@ pub async fn insert_numeric() {
         // Usage example
         let response_inner: Result<String, String> = supabase_client
             .insert(
-                "test",
+                "users",
                 json!({
-                    "dog": 1234
+                    "age": 30,
+                    "score": 95.5
                 }),
             )
             .await;
