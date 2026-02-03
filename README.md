@@ -2,7 +2,7 @@
 
 An unofficial, lightweight Rust SDK for interacting with the Supabase REST and GraphQL APIs. This SDK provides a clean, chainable query-builder interface with comprehensive CRUD operations, advanced filtering capabilities, and optional modules for Storage and Realtime functionality.
 
-## 🚀 Key Features
+## Key Features
 
 - **Pure REST API by default** with optional nightly GraphQL support
 - **Fluent Query Builder** for intuitive filtering, ordering, limiting, and text search
@@ -14,7 +14,7 @@ An unofficial, lightweight Rust SDK for interacting with the Supabase REST and G
 - **Async/Await Support** throughout the entire API
 - **Clone-Friendly Client** for multi-threaded applications
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Installation](#installation)
 - [Features and Flags](#features-and-flags)
@@ -33,7 +33,7 @@ An unofficial, lightweight Rust SDK for interacting with the Supabase REST and G
 - [Contributing](#contributing)
 - [Contributors](#contributors)
 
-## 📦 Installation
+# Installation
 
 Add the crate to your project using Cargo:
 
@@ -79,9 +79,9 @@ SUPABASE_RS_NO_NIGHTLY_MSG=true
 SUPABASE_RS_DONT_REST_V1_URL=false
 ```
 
-> **💡 Tip**: Use your service role key for server-side applications and anon key for client-side applications with Row Level Security (RLS) enabled.
+> **Tip**: Use your service role key for server-side applications and anon key for client-side applications with Row Level Security (RLS) enabled.
 
-## 🎯 Features and Flags
+## Features and Flags
 
 ### Core Features
 
@@ -108,7 +108,7 @@ SUPABASE_RS_NO_NIGHTLY_MSG=true
 
 > **⚠️ Warning**: Nightly features are experimental and may introduce breaking changes without notice. Use with caution in production environments.
 
-## 🚀 Quickstart
+## Quickstart
 
 ### Basic Client Setup
 
@@ -175,7 +175,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## 🗄️ Database Operations
+## Database Operations
 
 ### Basic CRUD
 
@@ -409,7 +409,7 @@ async fn insert_with_retry(
 
 ### Count Operations
 
-> **⚠️ Performance Note**: Count operations are expensive and can be slow on large tables. Use sparingly and consider caching results.
+> ** Performance Note**: Count operations are expensive and can be slow on large tables. Use sparingly and consider caching results.
 
 ```rust
 // Count all records (expensive)
@@ -428,9 +428,9 @@ let active_users = client
     .await?;
 ```
 
-## 📁 Storage Operations
+## Storage Operations
 
-> **📋 Requirement**: Enable the `storage` feature in your `Cargo.toml`
+> ** Requirement**: Enable the `storage` feature in your `Cargo.toml`
 
 The Storage module provides comprehensive file management capabilities for Supabase Storage buckets.
 
@@ -473,7 +473,7 @@ for filename in files {
 let results = try_join_all(downloads).await?;
 ```
 
-## 🔍 GraphQL Support
+## GraphQL Support
 
 > **⚠️ Experimental**: Enable the `nightly` feature for GraphQL support. This is experimental and not production-ready.
 
@@ -580,7 +580,7 @@ let user_with_posts = Request::new(
 ).send().await?;
 ```
 
-## ⚡ Performance & Best Practices
+## Performance & Best Practices
 
 ### Client Management
 
@@ -645,7 +645,7 @@ let http_client = ClientBuilder::new()
 // Note: Custom client configuration requires modifying SupabaseClient::new()
 ```
 
-## 🧪 Testing
+## Testing
 
 This repository includes comprehensive test coverage with both integration and unit tests.
 
@@ -719,7 +719,7 @@ async fn test_user_operations() -> Result<(), String> {
 }
 ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Common Issues and Solutions
 
@@ -892,14 +892,14 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ### Areas for Contribution
 
-- 🔧 **Core Features**: Improve existing CRUD operations
-- 📦 **Storage**: Enhance file upload capabilities  
-- 🔍 **GraphQL**: Stabilize GraphQL support
-- 📚 **Documentation**: Improve examples and guides
-- 🧪 **Testing**: Add more comprehensive test coverage
-- 🚀 **Performance**: Optimize query building and execution
+- **Core Features**: Improve existing CRUD operations
+- **Storage**: Enhance file upload capabilities  
+- **GraphQL**: Stabilize GraphQL support
+- **Documentation**: Improve examples and guides
+- **Testing**: Add more comprehensive test coverage
+- **Performance**: Optimize query building and execution
 
-## 👥 Contributors
+## Contributors
 
 Special thanks to all contributors who have helped improve this project:
 
@@ -910,16 +910,16 @@ Special thanks to all contributors who have helped improve this project:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🔗 Links
+## Links
 
-- [📖 API Documentation](https://docs.rs/supabase_rs)
-- [🐛 Issue Tracker](https://github.com/floris-xlx/supabase_rs/issues)
-- [🔄 Changelog](CHANGELOG.md)
-- [🌐 Supabase Documentation](https://supabase.io/docs)
+- [API Documentation](https://docs.rs/supabase_rs)
+- [Issue Tracker](https://github.com/floris-xlx/supabase_rs/issues)
+- [Changelog](CHANGELOG.md)
+- [Supabase Documentation](https://supabase.io/docs)
 
 ---
 
