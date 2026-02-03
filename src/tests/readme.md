@@ -15,8 +15,10 @@ This directory contains integration-like tests that require a live Supabase proj
    ```
 4. Run tests:
    ```bash
-   cargo test -- --nocapture
+   supabase db reset && cargo test
    ```
+
+> **Note:** `db reset` re-seeds the database. Some tests (e.g. delete) consume seeded rows.
 
 ## Remote Setup
 
