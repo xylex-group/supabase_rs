@@ -7,23 +7,20 @@ pub async fn upsert_numeric() {
     async fn upsert_inner(supabase_client: SupabaseClient) -> Result<(), String> {
         // Usage example
 
-        let id: String = "8826759220049045588".to_string();
-        let email: i64 = 1234;
+        let id: String = "user-upsert-target".to_string();
 
-        // Usage example
         let response_inner = supabase_client
             .upsert(
-                "test",
+                "users",
                 &id,
                 json!({
-                    "email": email
+                    "age": 99
                 }),
             )
             .await;
 
         match response_inner {
             Ok(_) => Ok(()),
-
             Err(error) => {
                 println!("Error: {:?}", error);
                 Err(error)

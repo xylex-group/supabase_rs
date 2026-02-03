@@ -7,20 +7,18 @@ pub async fn update_with_column() {
     async fn update_inner(supabase_client: SupabaseClient) -> Result<(), String> {
         // Usage example
 
-        let id: String = "what da dog doing".to_string();
+        let username: String = "update_me".to_string();
 
         let updated_body: Value = json!({
-            "dog4": "what da dog doing"
+            "age": 29
         });
 
-        // Usage example
         let response_inner: Result<String, String> = supabase_client
-            .update_with_column_name("test", "dog", &id, updated_body)
+            .update_with_column_name("users", "username", &username, updated_body)
             .await;
 
         match response_inner {
             Ok(_) => Ok(()),
-
             Err(error) => {
                 println!("Error: {:?}", error);
                 Err(error)

@@ -4,20 +4,10 @@ use crate::SupabaseClient;
 pub async fn select_single() {
     /// Tests that `.single()` returns exactly one row and fails if none or multiple exist.
     async fn select_single_inner(client: SupabaseClient) -> Result<(), String> {
-        let sentinel = serde_json::json!({
-            "id": 0,
-            "number": "99999"
-        });
-
-        let _ = client.insert("test", &sentinel).await.map_err(|e| {
-            eprintln!("\x1b[33mWarning: upsert failed: {:?}\x1b[0m", e);
-            e
-        });
-
-        // Now query to get exactly that row
+        // query to get exactly one row
         let res = client
-            .select("test")
-            .eq("id", "test-single-sentinel")
+            .select("users")
+            .eq("id", "user-single-target")
             .single()
             .await;
 
@@ -41,15 +31,6 @@ pub async fn select_single() {
         }
     };
 
-    // To clean up afterwards
-    let cloned_client = client.clone();
-
     let result = select_single_inner(client).await;
-
-    // delete the sentinel row
-    if let Err(e) = cloned_client.delete("test", "test-single-sentinel").await {
-        eprintln!("\x1b[33mWarning: cleanup failed: {:?}\x1b[0m", e);
-    }
-
     assert!(result.is_ok());
 }

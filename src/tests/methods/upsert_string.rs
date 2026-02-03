@@ -7,23 +7,20 @@ pub async fn upsert_string() {
     async fn upsert_inner(supabase_client: SupabaseClient) -> Result<(), String> {
         // Usage example
 
-        let id: String = "8826759220049045588".to_string();
-        let email: String = "floris@xylex.ai".to_string();
+        let id: String = "user-upsert-target".to_string();
 
-        // Usage example
         let response_inner = supabase_client
             .upsert(
-                "test",
+                "users",
                 &id,
                 json!({
-                    "email": email
+                    "email": "upserted@example.com"
                 }),
             )
             .await;
 
         match response_inner {
             Ok(_) => Ok(()),
-
             Err(error) => {
                 eprintln!("\x1b[31mError: {:?}\x1b[0m", error);
                 Err(error)

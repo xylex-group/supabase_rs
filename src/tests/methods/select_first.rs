@@ -5,11 +5,7 @@ pub async fn select_first() {
     /// Tests that `.first()` returns the first matching row as `Some(Value)`
     /// or `None` if no rows match, without error.
     async fn select_first_inner(client: SupabaseClient) -> Result<(), String> {
-        let res = client
-            .select("test")
-            .order("id", true) // make deterministic
-            .first()
-            .await;
+        let res = client.select("users").order("id", true).first().await;
 
         match res {
             Ok(Some(row)) => {

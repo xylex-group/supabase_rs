@@ -6,11 +6,10 @@ pub async fn select_with_columns() {
     /// Performs a select_with_columns operation in an isolated scope.
     async fn select_filter_columns_inner(supabase_client: SupabaseClient) -> Result<(), String> {
         // Usage example
-
         let response_inner: Result<Vec<Value>, String> = supabase_client
-            .select("test")
-            .columns(["dog"].to_vec())
-            .eq("dog", "what da dog doing")
+            .select("users")
+            .columns(["email", "username"].to_vec())
+            .eq("username", "alice")
             .execute()
             .await;
 

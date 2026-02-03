@@ -8,8 +8,8 @@ pub async fn select_filter() {
         // Usage example
 
         let response_inner: Result<Vec<Value>, String> = supabase_client
-            .select("test")
-            .eq("dog", "what da dog doing")
+            .select("users")
+            .eq("username", "alice")
             .execute()
             .await;
 

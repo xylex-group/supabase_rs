@@ -6,9 +6,8 @@ pub async fn select_with_count() {
     /// Performs a select_filter operation in an isolated scope.
     async fn select_with_count_inner(supabase_client: SupabaseClient) -> Result<(), String> {
         // Usage example
-
         let response_inner: Result<Vec<Value>, String> =
-            supabase_client.select("test").count().execute().await;
+            supabase_client.select("users").count().execute().await;
 
         match response_inner {
             Ok(_) => Ok(()),
