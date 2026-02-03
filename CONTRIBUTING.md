@@ -2,7 +2,7 @@
 
 Thank you for your interest in contributing to `supabase_rs`! This guide will help you get started with development, testing, and submitting contributions.
 
-## 🎯 Project Vision
+## Project Vision
 
 `supabase_rs` aims to provide a comprehensive, type-safe, and performant Rust SDK for Supabase. We prioritize:
 
@@ -12,7 +12,7 @@ Thank you for your interest in contributing to `supabase_rs`! This guide will he
 - **Reliability**: Comprehensive error handling and testing
 - **Documentation**: Clear, comprehensive documentation with examples
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -51,7 +51,7 @@ Thank you for your interest in contributing to `supabase_rs`! This guide will he
    cargo test -- --nocapture
    ```
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```text
 supabase_rs/
@@ -73,7 +73,7 @@ supabase_rs/
 └── docs/                   # Additional documentation
 ```
 
-## 📝 Development Guidelines
+## Development Guidelines
 
 ### Code Style
 
@@ -135,7 +135,7 @@ supabase_rs/
    }
    ```
 
-## 🔧 Making Changes
+## Making Changes
 
 ### Feature Development
 
@@ -187,7 +187,7 @@ supabase_rs/
    - Improve existing examples
    - Add troubleshooting guides
 
-## 🧪 Testing Strategy
+## Testing Strategy
 
 ### Test Categories
 
@@ -250,7 +250,7 @@ async fn test_insert_and_retrieve() -> Result<(), String> {
 }
 ```
 
-## 📋 Pull Request Process
+## Pull Request Process
 
 ### Before Submitting
 
@@ -293,7 +293,7 @@ async fn test_insert_and_retrieve() -> Result<(), String> {
 3. **Feedback**: Address any requested changes
 4. **Merge**: Approved PRs will be merged by maintainers
 
-## 🎯 Contribution Areas
+## Contribution Areas
 
 ### High-Priority Areas
 
@@ -326,7 +326,7 @@ Before implementing new features:
 3. **Get Approval**: Wait for maintainer feedback
 4. **Implement**: Follow the development process
 
-## 🐛 Bug Reports
+## Bug Reports
 
 ### Reporting Bugs
 
@@ -367,7 +367,7 @@ What actually happened.
 Any other relevant information.
 ```
 
-## 📚 Resources
+## Resources
 
 ### Documentation
 
@@ -381,7 +381,7 @@ Any other relevant information.
 - [clippy](https://github.com/rust-lang/rust-clippy) - Linting
 - [cargo-doc](https://doc.rust-lang.org/cargo/commands/cargo-doc.html) - Documentation generation
 
-## 🤝 Community
+## Community
 
 ### Communication
 
@@ -396,7 +396,7 @@ Any other relevant information.
 - Help others learn and grow
 - Follow Rust community standards
 
-## 🏆 Recognition
+##  Recognition
 
 Contributors are recognized in:
 - README.md contributors section
