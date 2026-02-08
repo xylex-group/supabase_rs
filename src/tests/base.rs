@@ -116,6 +116,12 @@ mod methods {
         test_select_with_count().await;
     }
 
+    // Tests the `select_filter` method of `SupabaseClient`.
+    // #[tokio::test]
+    // async fn select_with_count_and_filter() {
+    //     test_select_with_count_and_filter().await;
+    // }
+
     /// Tests the `select_filter` method of `SupabaseClient`.
     #[tokio::test]
     async fn delete() {

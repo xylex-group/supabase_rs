@@ -120,12 +120,14 @@ pub async fn handle_response(response: Response) -> Result<Vec<Value>, String> {
 
         // If we have error text but couldn't parse it as structured error, include it
         if !error_text.is_empty() {
-            let fallback_error = error_message.unwrap_err();
+            let fallback_error = error_message
+                .expect_err("Expected an error, but got Ok when handling Supabase error response");
             return Err(format!("{}\nResponse: {}", fallback_error, error_text));
         }
 
         // Convert the error to the expected type
-        Err(error_message.unwrap_err())
+        Err(error_message
+            .expect_err("Expected an error, but got Ok when handling Supabase error response"))
     }
 }
 
@@ -145,7 +147,7 @@ mod tests {
 
         let error_response: SupabaseErrorResponse = serde_json::from_value(error_json).unwrap();
 
-        assert_eq!(error_response.code, Some("42703".to_string()));
+        assert_eq!(error_response.code, Some("42703".to_owned()));
         assert_eq!(
             error_response.message,
             "column jortt_invoices.account_side does not exist"
@@ -155,7 +157,7 @@ mod tests {
             error_response.hint,
             Some(
                 "Perhaps you meant to reference the column \"jortt_invoices.amount_side\"."
-                    .to_string()
+                    .to_owned()
             )
         );
     }
@@ -170,14 +172,14 @@ mod tests {
 
         let error_response: SupabaseErrorResponse = serde_json::from_value(error_json).unwrap();
 
-        assert_eq!(error_response.code, Some("23505".to_string()));
+        assert_eq!(error_response.code, Some("23505".to_owned()));
         assert_eq!(
             error_response.message,
             "duplicate key value violates unique constraint"
         );
         assert_eq!(
             error_response.details,
-            Some("Key (email)=(test@example.com) already exists.".to_string())
+            Some("Key (email)=(test@example.com) already exists.".to_owned())
         );
         assert_eq!(error_response.hint, None);
     }

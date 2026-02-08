@@ -59,7 +59,9 @@ pub async fn generate_supabase_types(
         .into_iter()
         .filter_map(|m| match m {
             SimpleQueryMessage::Row(r) => Some(r),
-            _ => None,
+            SimpleQueryMessage::CommandComplete(_) | SimpleQueryMessage::RowDescription(_) | _ => {
+                None
+            }
         })
         .collect();
 
@@ -67,7 +69,7 @@ pub async fn generate_supabase_types(
         let table_name: String = row
             .get::<usize>(0)
             .expect("table_name not found")
-            .to_string();
+            .to_owned();
 
         if !included_tables.contains(&table_name.as_ref()) {
             continue;
@@ -76,30 +78,27 @@ pub async fn generate_supabase_types(
         let column_name: String = row
             .get::<usize>(1)
             .expect("column_name not found")
-            .to_string();
+            .to_owned();
 
-        let data_type: String = row
-            .get::<usize>(2)
-            .expect("data_type not found")
-            .to_string();
+        let data_type: String = row.get::<usize>(2).expect("data_type not found").to_owned();
 
         let is_nullable: String = row
             .get::<usize>(3)
             .expect("is_nullable not found")
-            .to_string();
+            .to_owned();
 
         let column_default: Option<String> = row.get::<usize>(4).and_then(|s| {
             if s.is_empty() {
                 None
             } else {
-                Some(s.to_string())
+                Some(s.to_owned())
             }
         });
 
         let is_identity: String = row
             .get::<usize>(5)
             .expect("is_identity not found")
-            .to_string();
+            .to_owned();
 
         let base_rust_type: &'static str = match data_type.as_str() {
             "integer" => "i32",
@@ -125,7 +124,7 @@ pub async fn generate_supabase_types(
         let rust_type: String = if nullable_flag {
             format!("Option<{base_rust_type}>")
         } else {
-            base_rust_type.to_string()
+            base_rust_type.to_owned()
         };
 
         // stash both the primary type and flags for use in New<>
@@ -252,34 +251,55 @@ pub async fn generate_supabase_types(
     }
 
     if fs::metadata("src/lib.rs").is_ok() {
-        let mut lib_rs: File = OpenOptions::new().read(true).open("src/lib.rs").unwrap();
+        let mut lib_rs: File = OpenOptions::new()
+            .read(true)
+            .open("src/lib.rs")
+            .expect("Failed to open src/lib.rs for reading");
         let mut contents: String = String::new();
-        lib_rs.read_to_string(&mut contents).unwrap();
+        lib_rs
+            .read_to_string(&mut contents)
+            .expect("Failed to read src/lib.rs to string");
         if !contents.contains("pub mod supabase_types;") {
-            let mut lib_rs: File = OpenOptions::new().append(true).open("src/lib.rs").unwrap();
-            lib_rs.write_all(b"pub mod supabase_types;\n").unwrap();
+            let mut lib_rs: File = OpenOptions::new()
+                .append(true)
+                .open("src/lib.rs")
+                .expect("Failed to open src/lib.rs for appending");
+            lib_rs
+                .write_all(b"pub mod supabase_types;\n")
+                .expect("Failed to write to src/lib.rs");
         }
     } else if fs::metadata("src/mod.rs").is_ok() {
-        let mut mod_rs: File = OpenOptions::new().read(true).open("src/mod.rs").unwrap();
+        let mut mod_rs: File = OpenOptions::new()
+            .read(true)
+            .open("src/mod.rs")
+            .expect("Failed to open src/mod.rs for reading");
         let mut contents: String = String::new();
-        mod_rs.read_to_string(&mut contents).unwrap();
+        mod_rs
+            .read_to_string(&mut contents)
+            .expect("Failed to read src/mod.rs to string");
         if !contents.contains("pub mod supabase_types;") {
-            let mut mod_rs: File = OpenOptions::new().append(true).open("src/mod.rs").unwrap();
-            mod_rs.write_all(b"pub mod supabase_types;\n").unwrap();
+            let mut mod_rs: File = OpenOptions::new()
+                .append(true)
+                .open("src/mod.rs")
+                .expect("Failed to open src/mod.rs for appending");
+            mod_rs
+                .write_all(b"pub mod supabase_types;\n")
+                .expect("Failed to write to src/mod.rs");
         }
     }
 
     // write file
     if fs::metadata("src/supabase_types.rs").is_ok() {
-        fs::remove_file("src/supabase_types.rs").unwrap();
+        fs::remove_file("src/supabase_types.rs").expect("Failed to remove src/supabase_types.rs");
     }
     let mut file: File = OpenOptions::new()
         .create(true)
-        .write(true)
         .truncate(true)
+        .write(true)
         .open("src/supabase_types.rs")
-        .unwrap();
-    file.write_all(output.as_bytes()).unwrap();
+        .expect("Could not write to src/supabase_types.rs");
+    file.write_all(output.as_bytes())
+        .expect("Failed to write to src/supabase_types.rs");
 }
 
 fn pascal_case(s: &str) -> String {
@@ -300,7 +320,11 @@ fn snake_case(s: &str) -> String {
         if c.is_uppercase() && i > 0 {
             out.push('_');
         }
-        out.push(c.to_lowercase().next().unwrap());
+        out.push(
+            c.to_lowercase()
+                .next()
+                .expect("Failed to convert character to lowercase"),
+        );
     }
     out
 }

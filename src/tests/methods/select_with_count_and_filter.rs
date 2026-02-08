@@ -37,5 +37,5 @@ pub async fn select_with_count_and_filter() {
     };
     let response: Result<(), String> = select_with_count_and_filter_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("Select with count and filter operation should succeed");
 }

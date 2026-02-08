@@ -39,5 +39,5 @@ pub async fn insert_if_unique_string() {
     };
     let response: Result<(), String> = insert_if_unique_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("insert_if_unique_inner failed");
 }
