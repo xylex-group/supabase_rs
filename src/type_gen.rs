@@ -7,11 +7,106 @@ use std::str::Chars;
 use tokio;
 use tokio_postgres::{Config, NoTls, SimpleQueryMessage, SimpleQueryRow};
 
+/// Generates Rust types for Supabase tables and RPC functions in the default 'public' schema.
+///
+/// This function connects to your Supabase Postgres database and generates Rust structs
+/// for all tables and their columns, as well as argument structs for RPC functions.
+///
+/// # Arguments
+///
+/// * `user` - PostgreSQL username
+/// * `password` - PostgreSQL password
+/// * `singularize_struct_name` - If `true`, table names are singularized for struct names
+/// * `included_tables` - List of table names to include (empty for all tables)
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use supabase_rs::type_gen::generate_supabase_types;
+///
+/// #[tokio::main]
+/// async fn main() {
+///     generate_supabase_types(
+///         "postgres",
+///         "password",
+///         true,
+///         &["users", "posts"]
+///     ).await;
+/// }
+/// ```
 pub async fn generate_supabase_types(
     user: &str,
     password: &str,
     singularize_struct_name: bool,
     included_tables: &[&str],
+) {
+    generate_supabase_types_with_schema(
+        user,
+        password,
+        singularize_struct_name,
+        included_tables,
+        "public",
+    )
+    .await
+}
+
+/// Generates Rust types for Supabase tables and RPC functions with schema support.
+///
+/// This function extends `generate_supabase_types` with schema-aware type generation.
+/// It generates:
+/// 1. Primary and New<T> structs for each table
+/// 2. Helper methods for column names and table names
+/// 3. RPC function argument structs in a separate `rpc` module
+///
+/// RPC function argument structs are generated for all PostgreSQL functions in the
+/// specified schema, with proper type mapping and parameter mode handling (IN, INOUT).
+/// OUT parameters are excluded as they are not passed as arguments.
+///
+/// # Arguments
+///
+/// * `user` - PostgreSQL username
+/// * `password` - PostgreSQL password
+/// * `singularize_struct_name` - If `true`, table names are singularized for struct names
+/// * `included_tables` - List of table names to include (empty for all tables)
+/// * `schema` - PostgreSQL schema name (defaults to "public")
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use supabase_rs::type_gen::generate_supabase_types_with_schema;
+///
+/// #[tokio::main]
+/// async fn main() {
+///     generate_supabase_types_with_schema(
+///         "postgres",
+///         "password",
+///         true,
+///         &["users", "posts"],
+///         "public"
+///     ).await;
+/// }
+/// ```
+///
+/// # Generated Output Example
+///
+/// For a function `create_user(name text, age integer)`:
+/// ```rust
+/// pub mod rpc {
+///     use serde::Serialize;
+///
+///     #[derive(Debug, Serialize, Clone)]
+///     pub struct CreateUserArgs {
+///         pub name: String,
+///         pub age: i32,
+///     }
+/// }
+/// ```
+pub async fn generate_supabase_types_with_schema(
+    user: &str,
+    password: &str,
+    singularize_struct_name: bool,
+    included_tables: &[&str],
+    schema: &str,
 ) {
     // connect to your supabase Postgres pooler
     let mut config: Config = Config::new();
@@ -34,9 +129,9 @@ pub async fn generate_supabase_types(
         }
     });
 
-    // fetch schema info
-    let query: &'static str = "
-        SELECT
+    // fetch table schema info
+    let table_query = format!(
+        "SELECT
             table_name,
             column_name,
             data_type,
@@ -44,18 +139,19 @@ pub async fn generate_supabase_types(
             column_default,
             is_identity
         FROM information_schema.columns
-        WHERE table_schema = 'public'
-        ORDER BY table_name, ordinal_position;
-    ";
+        WHERE table_schema = '{}'
+        ORDER BY table_name, ordinal_position;",
+        schema
+    );
 
     let mut table_definitions: BTreeMap<String, Vec<(String, String, bool, bool)>> =
         BTreeMap::new();
     let mut all_columns: BTreeMap<String, Vec<String>> = BTreeMap::new();
 
-    let rows: Vec<SimpleQueryRow> = client
-        .simple_query(query)
+    let table_rows: Vec<SimpleQueryRow> = client
+        .simple_query(&table_query)
         .await
-        .expect("simple_query")
+        .expect("simple_query for tables")
         .into_iter()
         .filter_map(|m| match m {
             SimpleQueryMessage::Row(r) => Some(r),
@@ -63,7 +159,7 @@ pub async fn generate_supabase_types(
         })
         .collect();
 
-    for row in rows {
+    for row in table_rows {
         let table_name: String = row
             .get::<usize>(0)
             .expect("table_name not found")
@@ -135,6 +231,92 @@ pub async fn generate_supabase_types(
             .push((column_name.clone(), rust_type, nullable_flag, default_flag));
 
         all_columns.entry(table_name).or_default().push(column_name);
+    }
+
+    // fetch RPC function info
+    let rpc_query = format!(
+        "SELECT
+            r.routine_name,
+            p.parameter_name,
+            p.data_type,
+            p.ordinal_position,
+            p.parameter_mode
+        FROM information_schema.routines r
+        JOIN information_schema.parameters p 
+            ON r.specific_name = p.specific_name
+        WHERE r.routine_type = 'FUNCTION' 
+          AND r.routine_schema = '{}'
+        ORDER BY r.routine_name, p.ordinal_position;",
+        schema
+    );
+
+    let mut rpc_definitions: BTreeMap<String, Vec<(String, String, String)>> = BTreeMap::new();
+
+    let rpc_rows: Vec<SimpleQueryRow> = client
+        .simple_query(&rpc_query)
+        .await
+        .expect("simple_query for rpc functions")
+        .into_iter()
+        .filter_map(|m| match m {
+            SimpleQueryMessage::Row(r) => Some(r),
+            _ => None,
+        })
+        .collect();
+
+    for row in rpc_rows {
+        let routine_name: String = row
+            .get::<usize>(0)
+            .expect("routine_name not found")
+            .to_string();
+        let parameter_name: String = row
+            .get::<usize>(1)
+            .expect("parameter_name not found")
+            .to_string();
+        let data_type: String = row
+            .get::<usize>(2)
+            .expect("data_type not found")
+            .to_string();
+        let _ordinal_position: String = row
+            .get::<usize>(3)
+            .expect("ordinal_position not found")
+            .to_string();
+        let parameter_mode: String = row
+            .get::<usize>(4)
+            .expect("parameter_mode not found")
+            .to_string();
+
+        // Only include IN and INOUT parameters (OUT parameters are not passed as arguments)
+        if parameter_mode == "OUT" {
+            continue;
+        }
+
+        let base_rust_type: &'static str = match data_type.as_str() {
+            "integer" => "i32",
+            "bigint" => "i64",
+            "smallint" => "i16",
+            "text" | "varchar" | "char" => "String",
+            "boolean" => "bool",
+            "real" | "double precision" => "f64",
+            "numeric" | "decimal" => "Decimal",
+            "timestamp without time zone" => "NaiveDateTime",
+            "timestamp with time zone" => "DateTime<Utc>",
+            "date" => "NaiveDate",
+            "uuid" => "Uuid",
+            "json" | "jsonb" => "Value",
+            _ => "String",
+        };
+
+        // For RPC arguments, we don't have nullable information from information_schema.parameters
+        // We'll assume they're not nullable (required) unless they have a default value
+        // For simplicity, we'll generate non-Option types
+        // In the future we could check pg_proc.proargdefaults to detect defaults
+        let rust_type = base_rust_type.to_string();
+
+        rpc_definitions.entry(routine_name).or_default().push((
+            parameter_name,
+            rust_type,
+            parameter_mode,
+        ));
     }
 
     let mut output: String = String::new();
@@ -229,6 +411,42 @@ pub async fn generate_supabase_types(
         output.push_str(&format!("    \"{t}\",\n"));
     }
     output.push_str("];\n\n");
+
+    // Generate RPC module if there are any functions
+    if !rpc_definitions.is_empty() {
+        output.push_str("pub mod rpc {\n");
+        output.push_str("    use serde::Serialize;\n");
+        output.push_str("    use serde_json::Value;\n");
+        output.push_str("    use chrono::{DateTime, Utc, NaiveDate, NaiveDateTime};\n");
+        output.push_str("    use uuid::Uuid;\n");
+        output.push_str("    use rust_decimal::Decimal;\n\n");
+
+        // ensure functions are emitted in sorted order:
+        let mut functions: Vec<_> = rpc_definitions.keys().cloned().collect();
+        functions.sort();
+        for function in &functions {
+            let parameters = &rpc_definitions[function];
+            let struct_name = format!("{}Args", pascal_case(function));
+
+            output.push_str(&format!("    #[derive(Debug, Serialize, Clone)]\n"));
+            output.push_str(&format!("    pub struct {} {{\n", struct_name));
+
+            for (param_name, rust_type, param_mode) in parameters {
+                let field = safe_field_name(param_name);
+                if &field != param_name {
+                    output.push_str(&format!("        #[serde(rename = \"{param_name}\")]\n"));
+                }
+                // Add comment about parameter mode if it's INOUT
+                if param_mode == "INOUT" {
+                    output.push_str(&format!("        // INOUT parameter\n"));
+                }
+                output.push_str(&format!("        pub {field}: {rust_type},\n"));
+            }
+            output.push_str("    }\n\n");
+        }
+
+        output.push_str("}\n\n");
+    }
 
     if singularize_struct_name {
         output.push_str("\n/// Map a singular resource name to its table\n");
