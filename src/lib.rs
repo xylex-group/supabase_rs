@@ -411,7 +411,7 @@ const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 use rand::prelude::ThreadRng;
-use rand::Rng;
+use rand::RngExt;
 use reqwest::Client;
 
 pub mod delete;
