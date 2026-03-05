@@ -42,6 +42,10 @@ mod methods {
         select::select as test_select,
         select_filter::select_filter as test_select_filter,
         select_first::select_first as test_select_first,
+        select_joins::{
+            select_joins_inner as test_select_joins_inner,
+            select_joins_left as test_select_joins_left, select_joins_m2m as test_select_joins_m2m,
+        },
         select_single::select_single as test_select_single,
         select_stacked_queries::select_stacked_queries as test_select_stacked_queries,
         select_with_columns::select_with_columns as test_select_with_columns,
@@ -119,6 +123,27 @@ mod methods {
     #[tokio::test]
     async fn select_with_count() {
         test_select_with_count().await;
+    }
+
+    /// Tests join/nested select: left join returns sections + empty instruments.
+    #[tokio::test]
+    #[ignore]
+    async fn select_joins_left() {
+        test_select_joins_left().await.expect("select_joins_left");
+    }
+
+    /// Tests join/nested select: inner join filters to flute section (woodwinds).
+    #[tokio::test]
+    #[ignore]
+    async fn select_joins_inner() {
+        test_select_joins_inner().await.expect("select_joins_inner");
+    }
+
+    /// Tests join/nested select: m2m teams -> members.
+    #[tokio::test]
+    #[ignore]
+    async fn select_joins_m2m() {
+        test_select_joins_m2m().await.expect("select_joins_m2m");
     }
 
     // Tests the `select_filter` method of `SupabaseClient`.

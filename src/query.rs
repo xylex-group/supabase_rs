@@ -94,6 +94,9 @@
 // local imports
 use crate::SupabaseClient;
 
+// Re-export join types for structured nested selects
+pub use crate::query_builder::join::{JoinModifier, JoinSpec};
+
 /// Comparison operators for query filters.
 ///
 /// These operators map directly to PostgREST's filter operators and provide

@@ -6,6 +6,7 @@ An unofficial, lightweight Rust SDK for interacting with the Supabase REST and G
 
 - **Pure REST API by default** with optional nightly GraphQL support
 - **Fluent Query Builder** for intuitive filtering, ordering, limiting, and text search
+- **Joins & Nested Selects** for embedding related resources (left/inner join, FK disambiguation)
 - **Complete CRUD Operations** with Insert, Update, Upsert, and Delete helpers
 - **Type-Safe Operations** with Rust's strong type system
 - **Connection Pooling** built-in with `reqwest::Client`
@@ -315,6 +316,46 @@ let page_2: Vec<Value> = client
     .columns(vec!["id", "email"])
     .limit(25)
     .offset(25)                         // Skip first 25 records
+    .execute()
+    .await?;
+```
+
+#### Joins & Nested Selects
+
+Embed related resources in a single request using PostgREST's resource embedding:
+
+```rust
+use supabase_rs::query::JoinSpec;
+use serde_json::Value;
+
+// Left join (default): parent rows with nested related data; empty array when no match
+let sections: Vec<Value> = client
+    .from("orchestral_sections")
+    .select_with_joins(&["id", "name"], &[JoinSpec::new("instruments", &["id", "name"])])
+    .execute()
+    .await?;
+
+// Inner join: filter parent rows to those with matching related rows
+let woodwinds_only: Vec<Value> = client
+    .from("orchestral_sections")
+    .select_with_joins(
+        &["id", "name"],
+        &[JoinSpec::new("instruments", &["id", "name"]).inner()],
+    )
+    .eq("instruments.name", "flute")
+    .execute()
+    .await?;
+
+// Explicit FK: disambiguate when multiple foreign keys exist between tables
+let orders: Vec<Value> = client
+    .from("orders")
+    .select_with_joins(
+        &["id", "name"],
+        &[
+            JoinSpec::new("addresses", &["name"]).alias("billing").foreign_key("orders_billing_address_id_fkey"),
+            JoinSpec::new("addresses", &["name"]).alias("shipping").foreign_key("orders_shipping_address_id_fkey"),
+        ],
+    )
     .execute()
     .await?;
 ```

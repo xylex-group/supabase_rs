@@ -94,6 +94,7 @@ query_builder/
 ├── mod.rs          # Public API exports
 ├── builder.rs      # QueryBuilder implementation
 ├── filter.rs       # Filter operations and Display trait
+├── join.rs         # Join/nested select (JoinSpec, JoinModifier)
 └── sort.rs         # Sort operations and Display trait
 ```
 
@@ -102,6 +103,7 @@ query_builder/
 - Parameter validation and encoding
 - Query string generation
 - Type-safe filter operations
+- **Joins & nested selects**: PostgREST resource embedding (left/inner join, FK disambiguation, aliases)
 
 #### 2. CRUD Operations
 
@@ -269,6 +271,22 @@ impl QueryBuilder {
         self
     }
 }
+```
+
+### 1b. Join & Nested Select API
+
+Use `select_with_joins` with `JoinSpec` for PostgREST resource embedding:
+
+```rust
+use supabase_rs::query::JoinSpec;
+
+client.from("sections")
+    .select_with_joins(&["id", "name"], &[
+        JoinSpec::new("instruments", &["id", "name"]).inner(),
+        JoinSpec::new("addresses", &["city"]).alias("billing").foreign_key("billing_fk"),
+    ])
+    .execute()
+    .await?;
 ```
 
 ### 2. Adding New CRUD Operations

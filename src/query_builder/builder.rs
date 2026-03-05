@@ -1,4 +1,4 @@
-use crate::query::{Filter, Query, QueryBuilder, Sort};
+use crate::query::{Filter, JoinSpec, Query, QueryBuilder, Sort};
 use crate::SupabaseClient;
 
 use serde_json::Value;
@@ -24,6 +24,47 @@ impl QueryBuilder {
         // add query params &select=column1,column2
         let columns_str: String = columns.join(",");
         self.query.add_param("select", &columns_str);
+        self
+    }
+
+    /// Select base columns plus nested/joined resources (PostgREST resource embedding).
+    ///
+    /// # Arguments
+    /// * `base_columns` - Column names from the main table.
+    /// * `joins` - Join specs for nested resources (e.g. `JoinSpec::new("instruments", &["id", "name"]).inner()`).
+    ///
+    /// # Examples
+    ///
+    /// ```rust,no_run
+    /// # use supabase_rs::SupabaseClient;
+    /// # use supabase_rs::query::JoinSpec;
+    /// # async fn example(client: SupabaseClient) -> Result<(), String> {
+    /// // Left join (default): sections with instruments nested
+    /// let rows = client
+    ///     .from("orchestral_sections")
+    ///     .select_with_joins(&["id", "name"], &[JoinSpec::new("instruments", &["id", "name"])])
+    ///     .execute()
+    ///     .await?;
+    ///
+    /// // Inner join: filter parent rows to those with matching related rows
+    /// let rows = client
+    ///     .from("orchestral_sections")
+    ///     .select_with_joins(&["id", "name"], &[JoinSpec::new("instruments", &["id", "name"]).inner()])
+    ///     .eq("instruments.name", "flute")
+    ///     .execute()
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn select_with_joins(mut self, base_columns: &[&str], joins: &[JoinSpec]) -> QueryBuilder {
+        let base: String = base_columns.join(",");
+        let join_fragments: Vec<String> = joins.iter().map(|j| j.to_select_fragment()).collect();
+        let select_str = if join_fragments.is_empty() {
+            base
+        } else {
+            format!("{},{}", base, join_fragments.join(","))
+        };
+        self.query.add_param("select", &select_str);
         self
     }
 
