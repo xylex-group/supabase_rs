@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0](https://github.com/xylex-group/supabase_rs/compare/v0.5.1...v0.6.0) (2026-03-05)
+
+
+### Features
+
+* add PostgREST RPC support with RpcBuilder ([690cef8](https://github.com/xylex-group/supabase_rs/commit/690cef8176f95f1f152d8acb5126e89d8be43bf7))
+* Enhance code quality and maintainability ([46037d3](https://github.com/xylex-group/supabase_rs/commit/46037d38fcb1d288c0a22b34d216c99b0ebb3508))
+* extend type generation for RPC functions ([2537cd0](https://github.com/xylex-group/supabase_rs/commit/2537cd04ce808798bf15e94065078a1a01407ec3))
+
+
+### Bug Fixes
+
+* **dependencies:** update reqwest to version 0.13.1 and correct rustls feature ([c44071b](https://github.com/xylex-group/supabase_rs/commit/c44071bbf9bab0bc9cdee7ae4d70aab0ed6b05e9))
+* Fixes clippy and formatting warnings ([053f80d](https://github.com/xylex-group/supabase_rs/commit/053f80dc266764e03ce8703b301ad56c8c803df5))
+
 ## [0.5.1](https://github.com/floris-xlx/supabase_rs/compare/v0.5.0...v0.5.1) (2026-01-03)
 
 

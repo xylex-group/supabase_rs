@@ -1,6 +1,6 @@
 [package]
 name = "supabase_rs"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2021"
 authors = ["Floris floris@xylex.ai"]
 description = "Lightweight Rust client for Supabase REST and GraphQL"
