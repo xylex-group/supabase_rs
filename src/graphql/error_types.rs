@@ -38,7 +38,7 @@ pub fn illegal_table_name(table_name: &str) -> String {
 
     print_red(&error);
 
-    "Illegal table name".to_string()
+    "Illegal table name".to_owned()
 }
 
 /// Generates an error message for an illegal field name.
@@ -64,7 +64,7 @@ pub fn illegal_field_name(field_name: &str) -> String {
 
     print_red(&error);
 
-    "Illegal field name".to_string()
+    "Illegal field name".to_owned()
 }
 
 /// Generates an error message indicating that a table does not exist.
@@ -80,7 +80,7 @@ pub fn table_does_not_exist(name: &str) -> String {
     let error: String = format!("\x1b[1;31mTable does not exist: {name}\x1b[0m");
     print_red(&error);
 
-    "Table does not exist".to_string()
+    "Table does not exist".to_owned()
 }
 
 /// Generates an error message indicating that a field does not exist on a table.
@@ -99,7 +99,7 @@ pub fn field_does_not_exist_on_table(field: &str, table: &str) -> String {
 
     print_red(&error);
 
-    "Field does not exist on table".to_string()
+    "Field does not exist on table".to_owned()
 }
 
 /// Generates an error message indicating that a table name does not end with "Collection".
@@ -123,7 +123,7 @@ pub fn table_name_does_not_end_with_collection(table_name: &str) -> String {
     println!("\x1b[1;34m{arrow_amount}\x1b[0m");
     print_red("Add Collection to the end of the table name and try again");
 
-    "Table name does not end with Collection".to_string()
+    "Table name does not end with Collection".to_owned()
 }
 
 /// Generates an error message indicating that JSON parsing failed.

@@ -40,5 +40,5 @@ pub async fn upsert_numeric() {
     };
     let response: Result<(), String> = upsert_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("Upsert numeric operation should succeed");
 }

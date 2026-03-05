@@ -40,5 +40,5 @@ pub async fn upsert_string() {
     };
     let response: Result<(), String> = upsert_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("Upsert string operation should succeed");
 }

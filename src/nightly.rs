@@ -5,7 +5,7 @@ use std::env;
 
 pub fn print_nightly_warning() {
     dotenv().ok();
-    if env::var("SUPABASE_RS_NO_NIGHTLY_MSG").unwrap_or_else(|_| "false".to_string()) == "true" {
+    if env::var("SUPABASE_RS_NO_NIGHTLY_MSG").unwrap_or_else(|_| "false".to_owned()) == "true" {
         return;
     }
     println!("\x1b[34;1mYou are currently in NIGHTLY\x1b[0m");
@@ -16,7 +16,7 @@ pub fn print_nightly_warning() {
 
 pub fn print_if_dev(message: &str) {
     dotenv().ok();
-    if env::var("SUPABASE_RS_DEV").unwrap_or_else(|_| "false".to_string()) == "true" {
+    if env::var("SUPABASE_RS_DEV").unwrap_or_else(|_| "false".to_owned()) == "true" {
         return;
     }
     println!("\x1b[34m{}\x1b[0m", message);

@@ -37,5 +37,5 @@ pub async fn insert_string() {
     };
     let response: Result<(), String> = insert_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("Insert operation failed");
 }

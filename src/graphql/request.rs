@@ -8,7 +8,7 @@ use crate::graphql::utils::headers::headers;
 use crate::graphql::RootTypes;
 use crate::SupabaseClient;
 
-use anyhow::{Error as AnyError, Result};
+use anyhow::{Context, Error as AnyError, Result};
 use regex::Regex;
 use reqwest::Client;
 use serde_json::Value;
@@ -35,7 +35,9 @@ impl Request {
                 r#"{{"query": "{}", "variables": {{}}}}"#,
                 self.query["query"].as_str().unwrap_or("")
             ),
-            _ => self.query.to_string(),
+            RootTypes::Mutation | RootTypes::Subscription | RootTypes::Fragment => {
+                self.query.to_string()
+            }
         };
 
         Ok(query.replace(['\n', '\t', ' '], ""))
@@ -52,7 +54,10 @@ impl Request {
         // println!("formatted_query: {}", formatted_query);
 
         #[cfg(feature = "rustls")]
-        let client = Client::builder().use_rustls_tls().build().unwrap();
+        let client = Client::builder()
+            .use_rustls_tls()
+            .build()
+            .context("Failed to build client")?;
 
         #[cfg(not(feature = "rustls"))]
         let client = Client::new();
@@ -64,8 +69,16 @@ impl Request {
 
         let res = client
             .post(&endpoint_graphql)
-            .header("apiKey", headers_map.get("apiKey").unwrap())
-            .header("Content-Type", headers_map.get("Content-Type").unwrap())
+            .header(
+                "apiKey",
+                headers_map.get("apiKey").context("Could not get apiKey")?,
+            )
+            .header(
+                "Content-Type",
+                headers_map
+                    .get("Content-Type")
+                    .context("Could not get Content-Type")?,
+            )
             .body(formatted_query)
             .send()
             .await?;
@@ -80,7 +93,7 @@ impl Request {
         if let Some(errors) = data["errors"].as_array() {
             let message = errors[0]["message"].clone();
             let error_message: String = serde_json::from_value(message)
-                .unwrap_or_else(|_| "Failed to deserialize error message".to_string());
+                .unwrap_or_else(|_| "Failed to deserialize error message".to_owned());
             let _error_message = error_router(&error_message, "eads", &table_name).await;
 
             let parsed_data: Value = data["errors"][0]["message"]
@@ -134,6 +147,6 @@ pub async fn error_router(error_message: &str, field_name: &str, table_name: &st
     } else if re_unsupported_float.is_match(error_message) {
         illegal_field_name(field_name)
     } else {
-        error_message.to_string()
+        error_message.to_owned()
     }
 }

@@ -16,7 +16,11 @@ pub async fn test_default_schema() {
     };
 
     // Verify default schema is "public"
-    assert_eq!(supabase_client.schema, "public");
+    assert_eq!(
+        supabase_client.schema, "public",
+        "Default schema should be 'public', but was '{}'",
+        supabase_client.schema
+    );
     println!("✅ Default schema is correctly set to 'public'");
 }
 
@@ -37,7 +41,11 @@ pub async fn test_custom_schema_zeus() {
     let zeus_client = supabase_client.schema("zeus");
 
     // Verify schema is set correctly
-    assert_eq!(zeus_client.schema, "zeus");
+    assert_eq!(
+        zeus_client.schema, "zeus",
+        "Custom schema should be 'zeus', but was '{}'",
+        zeus_client.schema
+    );
     println!("✅ Custom schema 'zeus' is correctly set");
 }
 
@@ -73,7 +81,7 @@ pub async fn test_schema_with_select() {
     };
 
     let response = select_inner(supabase_client).await;
-    assert!(response.is_ok());
+    response.expect("Select operation with schema should succeed");
 }
 
 /// Test schema functionality with insert operation (Content-Profile header)
@@ -113,7 +121,7 @@ pub async fn test_schema_with_insert() {
     };
 
     let response = insert_inner(supabase_client).await;
-    assert!(response.is_ok());
+    response.expect("Insert operation with schema should succeed");
 }
 
 /// Test schema functionality with update operation (Content-Profile header)
@@ -153,7 +161,7 @@ pub async fn test_schema_with_update() {
     };
 
     let response = update_inner(supabase_client).await;
-    assert!(response.is_ok());
+    response.expect("Update operation with schema should succeed");
 }
 
 /// Test schema functionality with upsert operation (Content-Profile header)
@@ -195,7 +203,7 @@ pub async fn test_schema_with_upsert() {
     };
 
     let response = upsert_inner(supabase_client).await;
-    assert!(response.is_ok());
+    response.expect("Upsert operation with schema should succeed");
 }
 
 /// Test schema functionality with delete operation (Content-Profile header)
@@ -230,7 +238,7 @@ pub async fn test_schema_with_delete() {
     };
 
     let response = delete_inner(supabase_client).await;
-    assert!(response.is_ok());
+    response.expect("Delete operation with schema should succeed");
 }
 
 /// Test that schema method is chainable and immutable
@@ -247,22 +255,40 @@ pub async fn test_schema_chaining() {
     };
 
     // Original client should still have default schema
-    assert_eq!(supabase_client.schema, "public");
+    assert_eq!(
+        supabase_client.schema, "public",
+        "Original client should maintain public schema"
+    );
 
     // Create new client with zeus schema (clone to keep original)
     let zeus_client = supabase_client.clone().schema("zeus");
-    assert_eq!(zeus_client.schema, "zeus");
+    assert_eq!(
+        zeus_client.schema, "zeus",
+        "Zeus client should have zeus schema"
+    );
 
     // Original client should be unchanged
-    assert_eq!(supabase_client.schema, "public");
+    assert_eq!(
+        supabase_client.schema, "public",
+        "Original client should still be public after cloning"
+    );
 
     // Can chain to create another client with different schema (clone to keep zeus_client)
     let apollo_client = zeus_client.clone().schema("apollo");
-    assert_eq!(apollo_client.schema, "apollo");
+    assert_eq!(
+        apollo_client.schema, "apollo",
+        "Apollo client should have apollo schema"
+    );
 
     // Previous clients should be unchanged
-    assert_eq!(supabase_client.schema, "public");
-    assert_eq!(zeus_client.schema, "zeus");
+    assert_eq!(
+        supabase_client.schema, "public",
+        "Original client should remain unchanged"
+    );
+    assert_eq!(
+        zeus_client.schema, "zeus",
+        "Zeus client should remain unchanged"
+    );
 
     println!("✅ Schema method is properly chainable and immutable");
 }

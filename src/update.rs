@@ -196,7 +196,7 @@ impl SupabaseClient {
         };
 
         if response.status().is_success() {
-            Ok(id.to_string())
+            Ok(id.to_owned())
         } else {
             Err(response.status().to_string())
         }
@@ -211,7 +211,7 @@ impl SupabaseClient {
     ) -> Result<String, String> {
         body["id"] = json!(id);
         match self.upsert_without_defined_key(table_name, body).await {
-            Ok(_) => Ok(id.to_string()),
+            Ok(_) => Ok(id.to_owned()),
             Err(e) => Err(e),
         }
     }

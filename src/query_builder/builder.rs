@@ -16,7 +16,7 @@ impl QueryBuilder {
         QueryBuilder {
             client,
             query: Query::new(),
-            table_name: table_name.to_string(),
+            table_name: table_name.to_owned(),
         }
     }
 
@@ -247,7 +247,7 @@ impl QueryBuilder {
         // ask for up to 2 rows to detect multiples
         let rows = self.limit(2).execute().await?;
         match rows.len() {
-            1 => Ok(rows.into_iter().next().unwrap()),
+            1 => Ok(rows.into_iter().next().expect("Expected at least 1 row")),
             0 => Err("NotFound: no rows matched the query".into()),
             _ => Err("MultipleRows: expected exactly one row but found multiple".into()),
         }
@@ -281,7 +281,7 @@ impl Query {
     /// query.add_param("name", "John Doe");
     /// ```
     pub fn add_param(&mut self, key: &str, value: &str) {
-        let key_value_pair = (key.to_string(), value.to_string());
+        let key_value_pair = (key.to_owned(), value.to_owned());
         if !self.params.contains(&key_value_pair) {
             self.params.push(key_value_pair);
         }

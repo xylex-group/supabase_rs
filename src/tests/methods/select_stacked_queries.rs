@@ -33,5 +33,5 @@ pub async fn select_stacked_queries() {
     };
     let response: Result<(), String> = select_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("Stacked queries operation should succeed");
 }

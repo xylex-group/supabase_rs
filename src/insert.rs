@@ -229,7 +229,7 @@ impl SupabaseClient {
         } else if response.status().as_u16() == 409 {
             println!("\x1b[31mError 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.\x1b[0m");
 
-            Err("Error 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.".to_string())
+            Err("Error 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.".to_owned())
         } else {
             println!("\x1b[31mError: {:?}\x1b[0m", response);
             Err(response.status().to_string())
@@ -311,7 +311,7 @@ impl SupabaseClient {
         } else if response.status().as_u16() == 409 {
             println!("\x1b[31mError 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.\x1b[0m");
 
-            Err("Error 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.".to_string())
+            Err("Error 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.".to_owned())
         } else {
             println!("\x1b[31mError: {:?}\x1b[0m", response);
             Err(response.status().to_string())
@@ -395,7 +395,7 @@ impl SupabaseClient {
             Some(map) => map,
             None => {
                 println!("\x1b[31mFailed to parse body as JSON object\x1b[0m");
-                return Err("Failed to parse body as JSON object".to_string());
+                return Err("Failed to parse body as JSON object".to_owned());
             }
         };
 
@@ -406,7 +406,11 @@ impl SupabaseClient {
             // ONLY if it's NOT a string
             let column_value_str: String = match column_value {
                 Value::String(s) => s.clone(),
-                _ => column_value.to_string(),
+                Value::Null
+                | Value::Bool(_)
+                | Value::Number(_)
+                | Value::Array(_)
+                | Value::Object(_) => column_value.to_string(),
             };
 
             // our query is sensitive to the type of the column value
@@ -422,10 +426,10 @@ impl SupabaseClient {
             }
         } else {
             println!("\x1b[31mFailed to execute select query\x1b[0m");
-            return Err("Failed to execute select query".to_string());
+            return Err("Failed to execute select query".to_owned());
         }
 
-        Err("Error 409: Duplicate entry. The values you're trying to insert may already exist in a column with a UNIQUE constraint".to_string())
+        Err("Error 409: Duplicate entry. The values you're trying to insert may already exist in a column with a UNIQUE constraint".to_owned())
     }
 
     /// Inserts new rows into the specified table in bulk.
@@ -467,7 +471,7 @@ impl SupabaseClient {
         T: serde::Serialize,
     {
         let Ok(body) = serde_json::to_value(body) else {
-            return Err("Failed to serialize body".to_string());
+            return Err("Failed to serialize body".to_owned());
         };
         let endpoint: String = self.endpoint(table_name);
 
@@ -500,7 +504,7 @@ impl SupabaseClient {
         } else if response.status().as_u16() == 409 {
             println!("\x1b[31mError 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.\x1b[0m");
 
-            Err("Error 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.".to_string())
+            Err("Error 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.".to_owned())
         } else {
             println!("\x1b[31mError: {:?}\x1b[0m", response);
             Err(response.status().to_string())

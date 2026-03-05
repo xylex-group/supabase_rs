@@ -27,7 +27,7 @@ pub fn get_table_name(query: &Value) -> Result<String, Error> {
     if parse_outer(query) {
         let query_str: &str = query["query"].as_str().unwrap_or("");
         // Remove all the { } and then get the first alphanumeric word from the query
-        let query_str: String = query_str.replace(['{', '}'], "").trim().to_string();
+        let query_str: String = query_str.replace(['{', '}'], "").trim().to_owned();
         let query_str: Vec<&str> = query_str.split_whitespace().collect();
         let mut table_name: String = query_str.first().unwrap_or(&"").to_string();
 

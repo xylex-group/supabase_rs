@@ -34,5 +34,5 @@ pub async fn select_filter() {
     };
     let response: Result<(), String> = select_filter_inner(supabase_client).await;
 
-    assert!(response.is_ok());
+    response.expect("Select filter operation should succeed");
 }
