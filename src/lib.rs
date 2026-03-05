@@ -437,6 +437,9 @@ pub mod nightly;
 pub mod realtime;
 pub mod storage;
 
+// This is locked by feature flag `rpc`
+pub mod rpc;
+
 use errors::Result;
 
 /// The main client for interacting with Supabase services.
@@ -596,6 +599,22 @@ impl SupabaseClient {
         self
     }
 
+    /// Calls a Postgres RPC function.
+    ///
+    /// # Arguments
+    /// * `function_name` - The name of the RPC function to call.
+    /// * `params` - The arguments to pass to the function. Can be a struct, map, or `json!({})`.
+    ///
+    /// # Returns
+    /// Returns a `RpcBuilder` for further chaining (filtering) or execution.
+    #[cfg(feature = "rpc")]
+    pub fn rpc<T>(&self, function_name: &str, params: T) -> crate::rpc::RpcBuilder
+    where
+        T: serde::Serialize,
+    {
+        crate::rpc::RpcBuilder::new(self.clone(), function_name, params)
+    }
+
     /// Returns the base URL of the Supabase project and table.
     ///
     /// # Arguments
@@ -615,6 +634,28 @@ impl SupabaseClient {
             format!("{}/{}", self.url, table_name)
         } else {
             format!("{}/rest/v1/{}", self.url, table_name)
+        }
+    }
+
+    /// Returns the RPC endpoint URL for a given function name.
+    ///
+    /// # Arguments
+    /// * `function_name` - The name of the RPC function to call.
+    ///
+    /// # Returns
+    /// Returns a string containing the RPC endpoint URL.
+    ///
+    /// The default format is `"{url}/rest/v1/rpc/{function_name}"`. If the environment variable
+    /// `SUPABASE_RS_DONT_REST_V1_URL=true` is set, it becomes `"{url}/rpc/{function_name}"`.
+    pub(crate) fn rpc_endpoint(&self, function_name: &str) -> String {
+        let dont_use_rest_v1: bool = std::env::var("SUPABASE_RS_DONT_REST_V1_URL")
+            .map(|val| val.to_lowercase() == "true")
+            .unwrap_or(false);
+
+        if dont_use_rest_v1 {
+            format!("{}/rpc/{}", self.url, function_name)
+        } else {
+            format!("{}/rest/v1/rpc/{}", self.url, function_name)
         }
     }
 }

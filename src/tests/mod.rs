@@ -10,6 +10,7 @@ pub mod methods {
     pub mod insert_numeric;
     pub mod insert_string;
     pub mod query;
+    pub mod rpc;
     pub mod select;
     pub mod select_filter;
     pub mod select_first;

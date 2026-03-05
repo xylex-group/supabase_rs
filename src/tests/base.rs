@@ -51,6 +51,11 @@ mod methods {
         upsert_string::upsert_string as test_upsert_string,
     };
 
+    #[cfg(feature = "rpc")]
+    use crate::tests::methods::rpc::{
+        test_rpc, test_rpc_single, test_rpc_type_generation, test_rpc_void, test_rpc_with_filters,
+    };
+
     /// Tests the `select_first` method of the crate.    
     #[tokio::test]
     async fn select_first() {
@@ -208,5 +213,42 @@ mod methods {
     #[tokio::test]
     async fn schema_all_tests() {
         run_all_schema_tests().await;
+    }
+
+    // RPC functionality tests
+
+    /// Tests the basic RPC execution
+    #[tokio::test]
+    #[cfg(feature = "rpc")]
+    async fn rpc_basic() {
+        test_rpc().await;
+    }
+
+    /// Tests the RPC execute_single method
+    #[tokio::test]
+    #[cfg(feature = "rpc")]
+    async fn rpc_single() {
+        test_rpc_single().await;
+    }
+
+    /// Tests the RPC execute_void method
+    #[tokio::test]
+    #[cfg(feature = "rpc")]
+    async fn rpc_void() {
+        test_rpc_void().await;
+    }
+
+    /// Tests RPC with filter methods
+    #[tokio::test]
+    #[cfg(feature = "rpc")]
+    async fn rpc_with_filters() {
+        test_rpc_with_filters().await;
+    }
+
+    /// Tests RPC type generation integration
+    #[tokio::test]
+    #[cfg(feature = "rpc")]
+    async fn rpc_type_generation() {
+        test_rpc_type_generation().await;
     }
 }
