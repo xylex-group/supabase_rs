@@ -14,6 +14,7 @@ pub mod methods {
     pub mod select;
     pub mod select_filter;
     pub mod select_first;
+    pub mod select_joins;
     pub mod select_single;
     pub mod select_stacked_queries;
     pub mod select_with_columns;

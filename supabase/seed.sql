@@ -7,3 +7,27 @@ insert into public.users (id, email, username, age, score, is_active) values
     ('user-update-target', 'update@test.com', 'update_me', 28, 60.0, true),
     ('user-upsert-target', 'upsert@test.com', 'upsert_me', 22, 45.0, true)
 on conflict (id) do nothing;
+
+-- Join fixture data
+insert into public.orchestral_sections (id, name) values
+    ('section-woodwinds', 'woodwinds'),
+    ('section-strings', 'strings'),
+    ('section-empty', 'empty')
+on conflict (id) do nothing;
+
+insert into public.instruments (id, name, section_id) values
+    ('inst-flute', 'flute', 'section-woodwinds'),
+    ('inst-clarinet', 'clarinet', 'section-woodwinds'),
+    ('inst-violin', 'violin', 'section-strings')
+on conflict (id) do nothing;
+
+insert into public.teams (id, name) values
+    ('team-alpha', 'Alpha'),
+    ('team-beta', 'Beta')
+on conflict (id) do nothing;
+
+insert into public.members (team_id, user_id) values
+    ('team-alpha', 'user-alice'),
+    ('team-alpha', 'user-bob'),
+    ('team-beta', 'user-charlie')
+on conflict (team_id, user_id) do nothing;

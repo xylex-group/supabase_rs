@@ -264,6 +264,32 @@ let user_summaries = client.rpc("get_users", json!({}))
     .await?;
 ```
 
+### Query Builder: Joins & Nested Selects
+
+For REST table queries (not RPC), use `select_with_joins` to embed related resources:
+
+```rust
+use supabase_rs::query::JoinSpec;
+
+// Left join: sections with nested instruments
+let sections = client
+    .from("orchestral_sections")
+    .select_with_joins(&["id", "name"], &[JoinSpec::new("instruments", &["id", "name"])])
+    .execute()
+    .await?;
+
+// Inner join: filter parent rows by nested match
+let filtered = client
+    .from("orchestral_sections")
+    .select_with_joins(
+        &["id", "name"],
+        &[JoinSpec::new("instruments", &["id", "name"]).inner()],
+    )
+    .eq("instruments.name", "flute")
+    .execute()
+    .await?;
+```
+
 ### Type-Safe Parameters
 
 #### Using Structs
