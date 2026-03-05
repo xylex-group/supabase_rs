@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/xylex-group/supabase_rs/compare/v0.6.0...v0.7.0) (2026-03-05)
+
+
+### Features
+
+* Add Joins & Nested Selects support to Query Builder ([b77642e](https://github.com/xylex-group/supabase_rs/commit/b77642e9583a888e950ecdd25956eddd84ce0b4a))
+
 ## [0.6.0](https://github.com/xylex-group/supabase_rs/compare/v0.5.1...v0.6.0) (2026-03-05)
 
 
