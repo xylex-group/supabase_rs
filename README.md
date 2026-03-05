@@ -1,5 +1,7 @@
 # supabase_rs
 
+current version: `0.7.0`
+
 An unofficial, lightweight Rust SDK for interacting with the Supabase REST and GraphQL APIs. This SDK provides a clean, chainable query-builder interface with comprehensive CRUD operations, advanced filtering capabilities, and optional modules for Storage and Realtime functionality.
 
 ## Key Features

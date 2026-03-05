@@ -1,58 +1,85 @@
-[package]
-name = "supabase_rs"
-version = "0.6.0"
-edition = "2021"
-authors = ["Floris floris@xylex.ai"]
-description = "Lightweight Rust client for Supabase REST and GraphQL"
-license = "MIT"
-readme = "README.md"
-repository = "https://github.com/floris-xlx/supabase_rs"
-# tests should not be included in the published package
-exclude = ["src/tests/*"]
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-reqwest = { version = "0.13.1", default-features = false, features = ["gzip", "json"] }
-rand = "0.10.0"
-serde_json = "1.0.111"
-dotenv = "0.15.0"
 anyhow = "1.0.86"
-regex = { version = "1.10.5", optional = false }
-serde  = { version = "1.0.196", features = ["derive"] }
-thiserror = "2.0.12"
-tokio = { version = "1.37.0", features = ["full"] }
-postgres = "0.19.10"
-tokio-postgres = "0.7.13"
-uuid = { version = "1.16.0", features = ["serde"] }
-chrono = { version = "0.4.40", features = ["serde"] }
-rust_decimal = "1.36.0"
 cruet = "0.15.0"
+dotenv = "0.15.0"
+postgres = "0.19.10"
+rand = "0.10.0"
+rust_decimal = "1.36.0"
+serde_json = "1.0.111"
+thiserror = "2.0.12"
+tokio-postgres = "0.7.13"
 
-[dev-dependencies]
-tokio = { version = "1.37.0", features = ["full"] }
+[dependencies.chrono]
+features = ["serde"]
+version = "0.4.40"
+
+[dependencies.regex]
+optional = false
+version = "1.10.5"
+
+[dependencies.reqwest]
+default-features = false
+features = [
+    "gzip",
+    "json",
+]
+version = "0.13.1"
+
+[dependencies.serde]
+features = ["derive"]
+version = "1.0.196"
+
+[dependencies.tokio]
+features = ["full"]
+version = "1.37.0"
+
+[dependencies.uuid]
+features = ["serde"]
+version = "1.16.0"
+
+[dev-dependencies.tokio]
+features = ["full"]
+version = "1.37.0"
 
 [features]
-default = ["native_tls", "nightly"]
+default = [
+    "native_tls",
+    "nightly",
+]
+native_tls = ["reqwest/native-tls"]
 nightly = []
-storage = []
 rpc = []
 rustls = ["reqwest/rustls"]
-native_tls = ["reqwest/native-tls"]
+storage = []
 
-# default = ["nightly"]
-# #
-# #
-# realtime = []
+[lints.clippy]
+all = "warn"
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+assertions_on_result_states = "warn"
+clone_on_ref_ptr = "warn"
+complexity = "warn"
+correctness = "warn"
+create_dir = "warn"
+missing_assert_message = "warn"
+panic_in_result_fn = "warn"
+perf = "warn"
+str_to_string = "warn"
+style = "warn"
+suspicious = "warn"
+todo = "warn"
+unimplemented = "warn"
+unwrap_used = "warn"
+wildcard_enum_match_arm = "warn"
 
 [lints.rust]
-unsafe_code = "deny"
 deprecated = "warn"
 elided_lifetimes_in_paths = "warn"
 rust_2021_prelude_collisions = "warn"
 semicolon_in_expressions_from_macros = "warn"
 trivial_numeric_casts = "warn"
-unsafe_op_in_unsafe_fn = "warn"                         # `unsafe_op_in_unsafe_fn` may become the default in future Rust versions: https://github.com/rust-lang/rust/issues/71668
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "warn"
 unused_extern_crates = "warn"
 unused_import_braces = "warn"
 unused_lifetimes = "warn"
@@ -61,27 +88,13 @@ unused_lifetimes = "warn"
 all = "warn"
 missing_crate_level_docs = "warn"
 
-[lints.clippy]
-all = "warn"
-correctness = "warn"
-suspicious = "warn"
-style = "warn"
-complexity = "warn"
-perf = "warn"
-# pedantic = "warn" # Maybe Enable later
-# nursery = "warn" # Maybe Enable later
-
-# Additional lints from https://rust-lang.github.io/rust-clippy/master/index.html?groups=restriction
-allow_attributes = "warn"
-allow_attributes_without_reason = "warn"
-assertions_on_result_states = "warn"
-create_dir = "warn"
-clone_on_ref_ptr = "warn"
-# expect_used = "warn" # Enable later
-missing_assert_message = "warn"
-panic_in_result_fn = "warn"
-str_to_string = "warn"
-todo = "warn"
-unwrap_used = "warn"
-unimplemented = "warn"
-wildcard_enum_match_arm = "warn"
+[package]
+authors = ["Floris floris@xylex.ai"]
+description = "Lightweight Rust client for Supabase REST and GraphQL"
+edition = "2021"
+exclude = ["src/tests/*"]
+license = "MIT"
+name = "supabase_rs"
+readme = "README.md"
+repository = "https://github.com/floris-xlx/supabase_rs"
+version = "0.7.0"
