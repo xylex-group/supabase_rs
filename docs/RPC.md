@@ -4,7 +4,7 @@
 
 The RPC (Remote Procedure Call) module provides comprehensive support for calling PostgreSQL functions via PostgREST's RPC endpoints. This enables executing stored procedures, functions, and custom SQL operations with full parameter support and result filtering capabilities.
 
-## 🎯 Implementation Summary
+## Summary
 
 ### Architecture
 The RPC implementation integrates seamlessly into the existing `supabase_rs` architecture:
@@ -28,7 +28,7 @@ The RPC implementation integrates seamlessly into the existing `supabase_rs` arc
 - **Performance**: Efficient serialization and HTTP request handling
 - **Flexibility**: Supports all PostgREST RPC features including filtering
 
-## 🔧 Feature Flags
+## Feature Flags
 
 RPC functionality is feature-gated. To enable it, add the `rpc` feature to your `Cargo.toml`:
 
@@ -52,7 +52,7 @@ The default feature set includes `native_tls` and `nightly`. To use RPC without 
 supabase_rs = { version = "0.5.1", features = ["rpc", "native_tls"], default-features = false }
 ```
 
-## 📚 API Reference
+## API Reference
 
 ### `SupabaseClient` Extension
 
@@ -347,8 +347,6 @@ let result = client.rpc("custom_function", json!({}))
     .await?;
 ```
 
-## 🔧 Type Generation Guide
-
 ### Overview
 The type generation system automatically creates Rust structs for RPC function arguments, providing type safety and IDE support.
 
@@ -441,8 +439,6 @@ The generator automatically:
 1. Creates `src/supabase_types.rs` with all generated types
 2. Adds `pub mod supabase_types;` to `src/lib.rs` if not present
 3. Organizes RPC argument structs in a `rpc` module
-
-## 🧪 Testing Guide
 
 ### Test Setup
 
@@ -539,8 +535,6 @@ fn create_test_client() -> SupabaseClient {
 }
 ```
 
-## 🚚 Migration Guide
-
 ### For Existing Users
 
 #### From Previous Versions
@@ -603,7 +597,7 @@ The RPC implementation introduces no breaking changes to existing APIs.
 #### None
 No APIs have been deprecated.
 
-## ⚠️ Known Limitations
+## Known Limitations
 
 ### Current Limitations
 
@@ -648,8 +642,6 @@ No APIs have been deprecated.
 
 #### Community Contributions
 These limitations represent opportunities for community contributions. Refer to the [Contributing Guide](CONTRIBUTING.md) for information on how to help improve the RPC implementation.
-
-## 📋 Summary
 
 The RPC implementation in `supabase_rs` provides a comprehensive, type-safe interface for calling PostgreSQL functions via PostgREST. Key features include:
 
