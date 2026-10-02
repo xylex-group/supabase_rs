@@ -48,7 +48,7 @@
 //! use supabase_rs::SupabaseClient;
 //! use serde_json::Value;
 //!
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Simple select with filtering
 //! let users: Vec<Value> = client
@@ -67,7 +67,7 @@
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
 //! # use serde_json::Value;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Complex filtering with multiple conditions
 //! let filtered_products: Vec<Value> = client
@@ -90,7 +90,7 @@
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
 //! # use serde_json::Value;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Select specific columns for efficiency
 //! let user_profiles: Vec<Value> = client
@@ -122,7 +122,7 @@
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
 //! # use serde_json::Value;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Count with filters (recommended)
 //! let active_user_count: Vec<Value> = client
@@ -152,12 +152,12 @@
 //!
 //! ## 🔧 Error Handling
 //!
-//! All select operations return `Result<Vec<Value>, String>` for consistent error handling:
+//! All select operations return the crate's typed `Result<T>`:
 //!
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
 //! # use serde_json::Value;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! match client.select("users").eq("id", "123").execute().await {
 //!     Ok(users) => {
@@ -170,7 +170,7 @@
 //!     Err(error) => {
 //!         eprintln!("Query failed: {}", error);
 //!         // Handle specific error cases
-//!         if error.contains("401") {
+//!         if matches!(&error, supabase_rs::Error::Api(api) if api.status == 401) {
 //!             eprintln!("Authentication failed");
 //!         }
 //!     }
@@ -179,14 +179,13 @@
 //! # }
 //! ```
 
+use crate::errors::Result;
 use crate::query::{Query, QueryBuilder};
-use crate::request::headers::HeadersTypes;
-use crate::request::Headers;
+use crate::request::headers::{default_headers, insert_header, HeadersTypes};
 use crate::success::handle_response;
+use crate::success::ResponseData;
 use crate::SupabaseClient;
 
-use reqwest::header::HeaderMap;
-use reqwest::header::{HeaderName, HeaderValue};
 use reqwest::Response;
 use serde_json::Value;
 
@@ -198,8 +197,6 @@ impl SupabaseClient {
     ///
     /// # Returns
     /// A `QueryBuilder` instance configured for the specified table.
-    // #[deprecate_until(remove = ">= 0.4.4", note = "`.select()` will be deprecated. Use `.from()` to specify the table name and then use `.select()` to pass the query string. This change will align with the official Supabase documentation for other languages.")]
-    // #[cfg(not(feature = "nightly"))]
     pub fn select(&self, table_name: &str) -> QueryBuilder {
         QueryBuilder::new(self.clone(), table_name)
     }
@@ -212,7 +209,7 @@ impl SupabaseClient {
     /// # Examples
     /// ```rust,no_run
     /// # use supabase_rs::SupabaseClient;
-    /// # async fn run(client: SupabaseClient) -> Result<(), String> {
+    /// # async fn run(client: SupabaseClient) -> Result<(), Box<dyn std::error::Error>> {
     /// let rows = client
     ///     .from("pets")
     ///     .eq("name", "scooby")
@@ -238,48 +235,59 @@ impl SupabaseClient {
     ///
     /// # Errors
     /// This function will return an error if the HTTP request fails or if the server returns a non-success status code.
-    pub async fn execute(
+    pub async fn execute(&self, table_name: &str, query_string: &str) -> Result<Vec<Value>> {
+        Ok(self
+            .execute_query_response(table_name, query_string, false, None)
+            .await?
+            .data)
+    }
+
+    /// Executes a query and returns records with the exact count from PostgREST, when available.
+    pub async fn execute_with_count(
         &self,
         table_name: &str,
         query_string: &str,
-    ) -> Result<Vec<Value>, String> {
+    ) -> Result<ResponseData<Vec<Value>>> {
+        let wants_count = query_string
+            .split('&')
+            .any(|parameter| parameter == "count=exact");
+        self.execute_query_response(table_name, query_string, wants_count, None)
+            .await
+    }
+
+    async fn execute_query_response(
+        &self,
+        table_name: &str,
+        query_string: &str,
+        wants_count: bool,
+        range: Option<(usize, usize)>,
+    ) -> Result<ResponseData<Vec<Value>>> {
         // Build the client and the endpoint
-        let endpoint: String = self.endpoint(table_name);
-        let endpoint: String = format!("{endpoint}?{query_string}");
-
-        #[cfg(feature = "nightly")]
-        println!("\x1b[33mEndpoint: {}\x1b[0m", endpoint);
-
-        #[cfg(feature = "nightly")]
-        use crate::nightly::print_nightly_warning;
-        #[cfg(feature = "nightly")]
-        print_nightly_warning();
-
-        let endpoint: String = if endpoint.ends_with("?count=exact") {
-            endpoint.replace("?count=exact", "")
-        } else {
-            endpoint
-        };
+        let pairs = crate::query::parse_query_pairs(query_string)
+            .into_iter()
+            .filter(|pair| pair != &("count".to_owned(), "exact".to_owned()));
+        let endpoint = crate::query::url_with_query_pairs(&self.endpoint(table_name), pairs)?;
 
         // create headers with default values
-        let mut headers: Headers = Headers::with_defaults(&self.api_key, &self.api_key);
-
-        headers.insert(HeadersTypes::AcceptProfile.as_str(), self.schema.as_str());
-
-        // convert headers to HeaderMap
-        let mut header_map: HeaderMap = HeaderMap::new();
-        for (key, value) in headers.get_headers() {
-            header_map.insert(
-                HeaderName::from_bytes(key.as_bytes()).map_err(|e| e.to_string())?,
-                HeaderValue::from_str(&value).map_err(|e| e.to_string())?,
-            );
+        let mut header_map = default_headers(&self.api_key, &self.api_key)?;
+        insert_header(
+            &mut header_map,
+            HeadersTypes::AcceptProfile.into(),
+            self.schema.as_str(),
+        )?;
+        if let Some((from, to)) = range {
+            insert_header(
+                &mut header_map,
+                HeadersTypes::Range.into(),
+                &format!("{from}-{to}"),
+            )?;
+        }
+        if wants_count {
+            insert_header(&mut header_map, HeadersTypes::Prefer.into(), "count=exact")?;
         }
 
         // send the request
-        let response: Response = match self.client.get(&endpoint).headers(header_map).send().await {
-            Ok(response) => response,
-            Err(error) => return Err(error.to_string()),
-        };
+        let response: Response = self.client.get(endpoint).headers(header_map).send().await?;
 
         // process the response
         handle_response(response).await
@@ -297,48 +305,39 @@ impl SupabaseClient {
     ///
     /// # Errors
     /// This function will return an error if the HTTP request fails or if the server returns a non-success status code.
-    pub async fn execute_with_query(
+    pub async fn execute_with_query(&self, table_name: &str, query: &Query) -> Result<Vec<Value>> {
+        Ok(self.execute_query_object(table_name, query).await?.data)
+    }
+
+    /// Executes a query builder request and returns exact count metadata when requested.
+    pub async fn execute_with_query_and_count(
         &self,
         table_name: &str,
         query: &Query,
-    ) -> Result<Vec<Value>, String> {
+    ) -> Result<ResponseData<Vec<Value>>> {
+        self.execute_query_object(table_name, query).await
+    }
+
+    async fn execute_query_object(
+        &self,
+        table_name: &str,
+        query: &Query,
+    ) -> Result<ResponseData<Vec<Value>>> {
         // Build the client and the endpoint
-        let endpoint: String = self.endpoint(table_name);
-        let query_string = query.build();
-        let endpoint: String = format!("{endpoint}?{query_string}");
-
-        let endpoint: String = if endpoint.ends_with("?count=exact") {
-            endpoint.replace("?count=exact", "")
-        } else {
-            endpoint
-        };
-
-        // create headers with default values
-        let mut headers: Headers = Headers::with_defaults(&self.api_key, &self.api_key);
-
-        // Add Range header if range is set
-        if let Some((from, to)) = query.get_range() {
-            headers.insert("Range", &format!("{}-{}", from, to));
+        let wants_count = query
+            .params
+            .iter()
+            .any(|(key, value)| key == "count" && value == "exact");
+        let range = query.get_range();
+        let mut query = query.build();
+        if wants_count {
+            query = query
+                .split('&')
+                .filter(|parameter| *parameter != "count=exact")
+                .collect::<Vec<_>>()
+                .join("&");
         }
-
-        headers.insert(HeadersTypes::AcceptProfile.as_str(), self.schema.as_str());
-
-        // convert headers to HeaderMap
-        let mut header_map: HeaderMap = HeaderMap::new();
-        for (key, value) in headers.get_headers() {
-            header_map.insert(
-                HeaderName::from_bytes(key.as_bytes()).map_err(|e| e.to_string())?,
-                HeaderValue::from_str(&value).map_err(|e| e.to_string())?,
-            );
-        }
-
-        // send the request
-        let response: Response = match self.client.get(&endpoint).headers(header_map).send().await {
-            Ok(response) => response,
-            Err(error) => return Err(error.to_string()),
-        };
-
-        // process the response
-        handle_response(response).await
+        self.execute_query_response(table_name, &query, wants_count, range)
+            .await
     }
 }

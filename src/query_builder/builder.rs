@@ -1,4 +1,6 @@
+use crate::errors::Result;
 use crate::query::{Filter, JoinSpec, Query, QueryBuilder, Sort};
+use crate::success::ResponseData;
 use crate::SupabaseClient;
 
 use serde_json::Value;
@@ -38,7 +40,7 @@ impl QueryBuilder {
     /// ```rust,no_run
     /// # use supabase_rs::SupabaseClient;
     /// # use supabase_rs::query::JoinSpec;
-    /// # async fn example(client: SupabaseClient) -> Result<(), String> {
+    /// # async fn example(client: SupabaseClient) -> Result<(), Box<dyn std::error::Error>> {
     /// // Left join (default): sections with instruments nested
     /// let rows = client
     ///     .from("orchestral_sections")
@@ -191,7 +193,7 @@ impl QueryBuilder {
     /// # Examples
     /// ```rust,no_run
     /// # use supabase_rs::SupabaseClient;
-    /// # async fn example(client: SupabaseClient) -> Result<(), String> {
+    /// # async fn example(client: SupabaseClient) -> Result<(), Box<dyn std::error::Error>> {
     /// // Get rows 10-19 (10 rows starting from index 10)
     /// let rows = client
     ///     .from("users")
@@ -257,10 +259,17 @@ impl QueryBuilder {
     /// Executes the constructed query against the database.
     ///
     /// # Returns
-    /// Returns a `Result` containing either a vector of `Value` representing the fetched records, or a `String` error message.
-    pub async fn execute(self) -> Result<Vec<Value>, String> {
+    /// Returns a `Result` containing either a vector of `Value` representing the fetched records, or a typed SDK error.
+    pub async fn execute(self) -> Result<Vec<Value>> {
         self.client
             .execute_with_query(&self.table_name, &self.query)
+            .await
+    }
+
+    /// Executes the query and returns exact count metadata when `.count()` was requested.
+    pub async fn execute_with_count(self) -> Result<ResponseData<Vec<Value>>> {
+        self.client
+            .execute_with_query_and_count(&self.table_name, &self.query)
             .await
     }
 
@@ -269,8 +278,8 @@ impl QueryBuilder {
     ///
     /// # Returns
     /// - `Ok(Vec<Value>)` with the fetched records when the request succeeds.
-    /// - `Err(String)` with an error message when the request fails.
-    pub async fn first(self) -> Result<Option<Value>, String> {
+    /// - A typed SDK error when the request fails.
+    pub async fn first(self) -> Result<Option<Value>> {
         // ask for 1 row for efficiency
         let rows = self.limit(1).execute().await?;
         Ok(rows.into_iter().next())
@@ -281,16 +290,23 @@ impl QueryBuilder {
     ///
     /// # Returns
     /// - Ok(Value) when exactly one row is found.
-    /// - Err(String) when no rows match.
-    /// - Err(String) when more than one row matches.
-    /// - Err(String) for other request failures.
-    pub async fn single(self) -> Result<Value, String> {
+    /// - A typed unexpected-response error when no rows match or multiple rows match.
+    /// - A typed SDK error for other request failures.
+    pub async fn single(self) -> Result<Value> {
         // ask for up to 2 rows to detect multiples
         let rows = self.limit(2).execute().await?;
         match rows.len() {
             1 => Ok(rows.into_iter().next().expect("Expected at least 1 row")),
-            0 => Err("NotFound: no rows matched the query".into()),
-            _ => Err("MultipleRows: expected exactly one row but found multiple".into()),
+            0 => Err(crate::errors::Error::UnexpectedResponse {
+                message: "no rows matched the query".to_owned(),
+                status: None,
+                body: None,
+            }),
+            _ => Err(crate::errors::Error::UnexpectedResponse {
+                message: "expected exactly one row but found multiple".to_owned(),
+                status: None,
+                body: None,
+            }),
         }
     }
 }
@@ -398,56 +414,38 @@ impl Query {
     /// query.add_param("name", "John Doe");
     /// query.add_param("age", "30");
     /// let query_string = query.build();
-    /// assert_eq!(query_string, "name=John Doe&age=30");
+    /// assert_eq!(query_string, "name=John+Doe&age=30");
     /// ```
     pub fn build(&self) -> String {
-        self.params
-            .iter()
-            .map(|(key, value)| format!("{key}={value}&"))
-            .collect::<Vec<String>>()
-            .join("");
-
-        let mut query_string: String = String::new();
-
-        // add params
-        query_string.push_str(
-            self.params
-                .iter()
-                .map(|(key, value)| format!("{key}={value}"))
-                .collect::<Vec<String>>()
-                .join("&")
-                .as_str(),
-        );
-
-        if !self.filters.is_empty() {
-            // add filters
-            if !query_string.is_empty() {
-                query_string.push('&');
-            }
-            query_string.push_str(
-                self.filters
-                    .iter()
-                    .map(|filter| filter.to_string())
-                    .collect::<Vec<String>>()
-                    .join("&")
-                    .as_str(),
-            );
-        }
+        let mut pairs = self.params.clone();
+        pairs.extend(self.filters.iter().map(|filter| {
+            let operator = match filter.operator {
+                crate::query::Operator::Equals => "eq",
+                crate::query::Operator::NotEquals => "neq",
+                crate::query::Operator::GreaterThan => "gt",
+                crate::query::Operator::LessThan => "lt",
+                crate::query::Operator::GreaterThanOrEquals => "gte",
+                crate::query::Operator::LessThanOrEquals => "lte",
+            };
+            (
+                filter.column.clone(),
+                format!("{operator}.{}", filter.value),
+            )
+        }));
         if !self.sorts.is_empty() {
-            // add sorts
-            if !query_string.is_empty() {
-                query_string.push('&');
-            }
-
-            query_string.push_str(
+            pairs.push((
+                "order".to_owned(),
                 self.sorts
                     .iter()
-                    .map(|sort| sort.to_string())
-                    .collect::<Vec<String>>()
-                    .join("&")
-                    .as_str(),
-            );
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ));
         }
-        query_string
+        crate::query::url_with_query_pairs("http://query.invalid", pairs)
+            .expect("static query URL is valid")
+            .query()
+            .unwrap_or_default()
+            .to_owned()
     }
 }

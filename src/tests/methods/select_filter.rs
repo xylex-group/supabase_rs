@@ -1,13 +1,12 @@
 use crate::tests::methods::init::init;
 use crate::SupabaseClient;
-use serde_json::Value;
 
 pub async fn select_filter() {
     /// Performs a select_filter operation in an isolated scope.
-    async fn select_filter_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn select_filter_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Usage example
 
-        let response_inner: Result<Vec<Value>, String> = supabase_client
+        let response_inner = supabase_client
             .select("users")
             .eq("username", "alice")
             .execute()
@@ -32,7 +31,7 @@ pub async fn select_filter() {
             return;
         }
     };
-    let response: Result<(), String> = select_filter_inner(supabase_client).await;
+    let response = select_filter_inner(supabase_client).await;
 
     response.expect("Select filter operation should succeed");
 }

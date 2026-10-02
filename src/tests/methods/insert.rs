@@ -4,9 +4,9 @@ use serde_json::json;
 
 pub async fn insert() {
     /// Performs an insert operation in an isolated scope.
-    async fn insert_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn insert_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Usage example
-        let response_inner: Result<String, String> = supabase_client
+        let response_inner = supabase_client
             .insert(
                 "users",
                 json!({
@@ -37,7 +37,7 @@ pub async fn insert() {
         }
     };
 
-    let response: Result<(), String> = insert_inner(supabase_client).await;
+    let response = insert_inner(supabase_client).await;
 
     response.expect("Insert operation failed");
 }

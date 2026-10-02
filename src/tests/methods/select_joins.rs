@@ -8,8 +8,8 @@ use crate::tests::methods::init::init;
 use serde_json::Value;
 
 /// Left join: orchestral_sections with instruments nested; sections with no instruments return empty array.
-pub async fn select_joins_left() -> Result<(), String> {
-    let client = init().await.map_err(|e| format!("{:?}", e))?;
+pub async fn select_joins_left() -> crate::Result<()> {
+    let client = init().await?;
     let rows: Vec<Value> = client
         .from("orchestral_sections")
         .select_with_joins(
@@ -45,8 +45,8 @@ pub async fn select_joins_left() -> Result<(), String> {
 }
 
 /// Inner join: filter to woodwinds only by requiring instruments with name=flute.
-pub async fn select_joins_inner() -> Result<(), String> {
-    let client = init().await.map_err(|e| format!("{:?}", e))?;
+pub async fn select_joins_inner() -> crate::Result<()> {
+    let client = init().await?;
     let rows: Vec<Value> = client
         .from("orchestral_sections")
         .select_with_joins(
@@ -70,8 +70,8 @@ pub async fn select_joins_inner() -> Result<(), String> {
 }
 
 /// Many-to-many: teams -> members (users via members).
-pub async fn select_joins_m2m() -> Result<(), String> {
-    let client = init().await.map_err(|e| format!("{:?}", e))?;
+pub async fn select_joins_m2m() -> crate::Result<()> {
+    let client = init().await?;
     let rows: Vec<Value> = client
         .from("teams")
         .select_with_joins(

@@ -3,10 +3,9 @@ use crate::SupabaseClient;
 
 pub async fn delete() {
     /// Performs a select_filter operation in an isolated scope.
-    async fn delete_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn delete_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Usage example
-        let response_inner: Result<(), String> =
-            supabase_client.delete("users", "user-delete-target").await;
+        let response_inner = supabase_client.delete("users", "user-delete-target").await;
 
         match response_inner {
             Ok(_) => Ok(()),
@@ -27,7 +26,7 @@ pub async fn delete() {
             return;
         }
     };
-    let response: Result<(), String> = delete_inner(supabase_client).await;
+    let response = delete_inner(supabase_client).await;
 
     response.expect("Delete operation failed")
 }

@@ -1,13 +1,11 @@
 use crate::tests::methods::init::init;
 use crate::SupabaseClient;
-use serde_json::Value;
 
 pub async fn select_with_count() {
     /// Performs a select_filter operation in an isolated scope.
-    async fn select_with_count_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn select_with_count_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Usage example
-        let response_inner: Result<Vec<Value>, String> =
-            supabase_client.select("users").count().execute().await;
+        let response_inner = supabase_client.select("users").count().execute().await;
 
         match response_inner {
             Ok(_) => Ok(()),
@@ -28,7 +26,7 @@ pub async fn select_with_count() {
             return;
         }
     };
-    let response: Result<(), String> = select_with_count_inner(supabase_client).await;
+    let response = select_with_count_inner(supabase_client).await;
 
     response.expect("Select with count operation should succeed");
 }

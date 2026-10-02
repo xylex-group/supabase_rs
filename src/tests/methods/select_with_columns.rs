@@ -1,12 +1,11 @@
 use crate::tests::methods::init::init;
 use crate::SupabaseClient;
-use serde_json::Value;
 
 pub async fn select_with_columns() {
     /// Performs a select_with_columns operation in an isolated scope.
-    async fn select_filter_columns_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn select_filter_columns_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Usage example
-        let response_inner: Result<Vec<Value>, String> = supabase_client
+        let response_inner = supabase_client
             .select("users")
             .columns(["email", "username"].to_vec())
             .eq("username", "alice")
@@ -32,7 +31,7 @@ pub async fn select_with_columns() {
             return;
         }
     };
-    let response: Result<(), String> = select_filter_columns_inner(supabase_client).await;
+    let response = select_filter_columns_inner(supabase_client).await;
 
     response.expect("Select with columns operation should succeed");
 }

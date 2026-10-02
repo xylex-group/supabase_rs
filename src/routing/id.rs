@@ -1,3 +1,4 @@
+use crate::errors::{Error, Result};
 use crate::SupabaseClient;
 
 use serde_json::Value;
@@ -12,19 +13,14 @@ impl SupabaseClient {
     /// * `column_name` - A `String` specifying the name of the column to match against the email.
     ///
     /// ## Returns
-    /// Returns a `Result<String, String>`:
-    /// - `Ok(String)` containing the ID of the row if found.
-    /// - `Err(String)` containing an error message if the query fails or if no matching row is found.
+    /// Returns the ID of the matching row, or a typed SDK error if the query fails or no row matches.
     ///
     /// ## Examples
-    /// ```rust
+    /// ```rust,no_run
     /// # use supabase_rs::SupabaseClient;
     /// #[tokio::main]
     /// async fn main() {
-    ///     let supabase_client = SupabaseClient::new(
-    ///         "your_supabase_url".to_string(),
-    ///         "your_supabase_key".to_string()
-    ///     ).unwrap();
+    ///     let supabase_client = SupabaseClient::new("http://localhost", "your_supabase_key").unwrap();
     ///     let email = "example@email.com".to_string();
     ///     let table_name = "users".to_string();
     ///     let column_name = "email".to_string();
@@ -39,22 +35,25 @@ impl SupabaseClient {
         email: String,
         table_name: String,
         column_name: String,
-    ) -> Result<String, String> {
-        let response: Result<Vec<Value>, String> = self
+    ) -> Result<String> {
+        let response: Result<Vec<Value>> = self
             .select(&table_name)
             .eq(&column_name, &email)
             .execute()
             .await;
 
         match response {
-            Ok(response) => {
-                if !response.is_empty() {
-                    let id: String = response[0]["id"].to_string();
-                    Ok(id)
-                } else {
-                    Err("No matching record found".to_owned())
-                }
-            }
+            Ok(response) => response
+                .first()
+                .and_then(|row| row.get("id"))
+                .map(|id| match id {
+                    Value::String(id) => id.clone(),
+                    Value::Number(id) => id.to_string(),
+                    Value::Null | Value::Bool(_) | Value::Array(_) | Value::Object(_) => {
+                        id.to_string()
+                    }
+                })
+                .ok_or_else(|| Error::InvalidInput("no matching record found".to_owned())),
             Err(error) => Err(error),
         }
     }

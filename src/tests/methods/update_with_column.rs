@@ -4,7 +4,7 @@ use serde_json::{json, Value};
 
 pub async fn update_with_column() {
     /// Performs a select_filter operation in an isolated scope.
-    async fn update_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn update_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Usage example
 
         let username: String = "update_me".to_owned();
@@ -13,7 +13,7 @@ pub async fn update_with_column() {
             "age": 29
         });
 
-        let response_inner: Result<String, String> = supabase_client
+        let response_inner = supabase_client
             .update_with_column_name("users", "username", &username, updated_body)
             .await;
 
@@ -36,7 +36,7 @@ pub async fn update_with_column() {
             return;
         }
     };
-    let response: Result<(), String> = update_inner(supabase_client).await;
+    let response = update_inner(supabase_client).await;
 
     response.expect("Update with column operation should succeed");
 }

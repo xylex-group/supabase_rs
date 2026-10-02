@@ -28,7 +28,7 @@
 //! use supabase_rs::SupabaseClient;
 //! use serde_json::json;
 //!
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //!
 //! // Call a function that returns a set of records
@@ -53,7 +53,7 @@
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
 //! # use serde_json::json;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Filter results after function execution
 //! let filtered = client.rpc("get_users", json!({}))
@@ -68,16 +68,15 @@
 //! ```
 
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::errors::Result;
 use crate::query::Query;
-use crate::request::headers::HeadersTypes;
-use crate::request::Headers;
-use crate::success::handle_response;
+use crate::request::headers::{default_headers, insert_header, HeadersTypes};
+use crate::success::handle_json_response;
 use crate::SupabaseClient;
 
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use reqwest::header::ACCEPT;
 use reqwest::Response;
 
 /// Builder for constructing and executing RPC calls.
@@ -105,7 +104,7 @@ use reqwest::Response;
 /// use supabase_rs::SupabaseClient;
 /// use serde_json::json;
 ///
-/// # async fn example() -> Result<(), String> {
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 /// let results = client.rpc("my_function", json!({ "param": "value" }))
 ///     .execute()
@@ -118,7 +117,7 @@ use reqwest::Response;
 /// ```rust,no_run
 /// # use supabase_rs::SupabaseClient;
 /// # use serde_json::json;
-/// # async fn example() -> Result<(), String> {
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 /// let active_users = client.rpc("get_users", json!({}))
 ///     .eq("status", "active")
@@ -135,7 +134,7 @@ pub struct RpcBuilder {
     /// Name of the RPC function to call
     function_name: String,
     /// Serialized function parameters
-    params: Value,
+    params: std::result::Result<Value, serde_json::Error>,
     /// Query object for filtering results (for set-returning functions)
     query: Query,
 }
@@ -158,7 +157,7 @@ impl RpcBuilder {
     /// use supabase_rs::{SupabaseClient, rpc::RpcBuilder};
     /// use serde_json::json;
     ///
-    /// # fn example() -> Result<(), String> {
+    /// # fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
     /// let builder = RpcBuilder::new(client, "my_function", json!({ "param": "value" }));
     /// # Ok(())
@@ -168,7 +167,7 @@ impl RpcBuilder {
         Self {
             client,
             function_name: function_name.to_owned(),
-            params: serde_json::to_value(params).unwrap_or(json!({})),
+            params: serde_json::to_value(params),
             query: Query::new(),
         }
     }
@@ -186,7 +185,7 @@ impl RpcBuilder {
     ///
     /// Returns `Result<Vec<Value>>` where:
     /// - `Ok(Vec<Value>)` - Array of JSON objects representing the returned rows
-    /// - `Err(ErrorTypes)` - Request failed (network, authentication, function not found, etc.)
+    /// - `Err(Error)` - Request failed (network, authentication, function not found, etc.)
     ///
     /// # Examples
     ///
@@ -194,7 +193,7 @@ impl RpcBuilder {
     /// use supabase_rs::SupabaseClient;
     /// use serde_json::json;
     ///
-    /// # async fn example() -> Result<(), String> {
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
     /// let users = client.rpc("get_active_users", json!({ "active": true }))
     ///     .execute()
@@ -224,7 +223,7 @@ impl RpcBuilder {
     ///
     /// Returns `Result<Value>` where:
     /// - `Ok(Value)` - The single returned value (could be scalar, object, or null)
-    /// - `Err(ErrorTypes)` - Request failed or returned multiple rows
+    /// - `Err(Error)` - Request failed or returned multiple rows
     ///
     /// # Examples
     ///
@@ -232,7 +231,7 @@ impl RpcBuilder {
     /// use supabase_rs::SupabaseClient;
     /// use serde_json::json;
     ///
-    /// # async fn example() -> Result<(), String> {
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
     /// // Scalar return
     /// let count = client.rpc("count_users", json!({}))
@@ -250,12 +249,13 @@ impl RpcBuilder {
     pub async fn execute_single(self) -> Result<Value> {
         let results = self.execute_internal(true).await?;
         if results.len() == 1 {
-            Ok(results
-                .into_iter()
-                .next()
-                .expect("single result when len is 1"))
+            Ok(results.into_iter().next().expect("length checked"))
         } else {
-            Err(crate::errors::ErrorTypes::UnknownError)
+            Err(crate::errors::Error::UnexpectedResponse {
+                message: format!("expected one RPC result, received {}", results.len()),
+                status: None,
+                body: None,
+            })
         }
     }
 
@@ -268,7 +268,7 @@ impl RpcBuilder {
     ///
     /// Returns `Result<()>` where:
     /// - `Ok(())` - Function executed successfully
-    /// - `Err(ErrorTypes)` - Request failed or returned unexpected content
+    /// - `Err(Error)` - Request failed or returned unexpected content
     ///
     /// # Examples
     ///
@@ -276,7 +276,7 @@ impl RpcBuilder {
     /// use supabase_rs::SupabaseClient;
     /// use serde_json::json;
     ///
-    /// # async fn example() -> Result<(), String> {
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
     /// client.rpc("cleanup_old_records", json!({ "days": 30 }))
     ///     .execute_void()
@@ -291,80 +291,85 @@ impl RpcBuilder {
         if status == 204 {
             Ok(())
         } else {
-            // For non-204 responses, treat as error
-            let _error_body = response.text().await.unwrap_or_default();
-            Err(crate::errors::ErrorTypes::UnknownError)
+            let decoded = handle_json_response(response).await?;
+            if decoded.data.is_null() {
+                Ok(())
+            } else {
+                Err(crate::errors::Error::UnexpectedResponse {
+                    message: "void RPC returned data".to_owned(),
+                    status: Some(status.as_u16()),
+                    body: None,
+                })
+            }
         }
     }
 
     /// Internal implementation shared by execute and execute_single.
     async fn execute_internal(self, single: bool) -> Result<Vec<Value>> {
         let response = self.execute_request(single).await?;
-        let status = response.status();
-
-        if !status.is_success() {
-            // For non-success responses, treat as error
-            let _error_body = response.text().await.unwrap_or_default();
-            return Err(crate::errors::ErrorTypes::UnknownError);
+        let decoded = handle_json_response(response).await?.data;
+        match decoded {
+            Value::Array(rows) => Ok(rows),
+            Value::Null => Ok(Vec::new()),
+            Value::Bool(value) if single => Ok(vec![Value::Bool(value)]),
+            Value::Number(value) if single => Ok(vec![Value::Number(value)]),
+            Value::String(value) if single => Ok(vec![Value::String(value)]),
+            Value::Object(value) if single => Ok(vec![Value::Object(value)]),
+            Value::Bool(_) | Value::Number(_) | Value::String(_) | Value::Object(_) => {
+                Err(crate::errors::Error::UnexpectedResponse {
+                    message: "RPC result was not a JSON array".to_owned(),
+                    status: None,
+                    body: None,
+                })
+            }
         }
-
-        // Parse response
-        handle_response(response)
-            .await
-            .map_err(|_e| crate::errors::ErrorTypes::UnknownError)
     }
 
     /// Internal method to execute the HTTP request.
     async fn execute_request(self, single: bool) -> Result<Response> {
+        let params = self.params.map_err(crate::errors::Error::Serialization)?;
+
         // Build endpoint URL
         let url = self.client.rpc_endpoint(&self.function_name);
 
         // Build query string from filters
-        let query_string = self.query.build();
-        let endpoint = if query_string.is_empty() {
-            url
-        } else {
-            format!("{}?{}", url, query_string)
-        };
+        let endpoint = crate::query::url_with_query_pairs(
+            &url,
+            crate::query::parse_query_pairs(&self.query.build()),
+        )?;
 
         // create headers with default values
-        let mut headers = Headers::with_defaults(&self.client.api_key, &self.client.api_key);
+        let mut headers = default_headers(&self.client.api_key, &self.client.api_key)?;
 
         // Content-Type is always application/json for RPC
-        headers.insert(HeadersTypes::ContentType.as_str(), "application/json");
-
         // Handle schema headers
         if self.client.schema != "public" {
-            headers.insert(HeadersTypes::ContentProfile.as_str(), &self.client.schema);
-            headers.insert(HeadersTypes::AcceptProfile.as_str(), &self.client.schema);
+            insert_header(
+                &mut headers,
+                HeadersTypes::ContentProfile.into(),
+                &self.client.schema,
+            )?;
+            insert_header(
+                &mut headers,
+                HeadersTypes::AcceptProfile.into(),
+                &self.client.schema,
+            )?;
         }
 
         // Handle single object response if requested
         if single {
-            headers.insert("Accept", "application/vnd.pgrst.object+json");
-        }
-
-        // convert headers to HeaderMap
-        let mut header_map = HeaderMap::new();
-        for (key, value) in headers.get_headers() {
-            header_map.insert(
-                HeaderName::from_bytes(key.as_bytes())
-                    .map_err(|_| crate::errors::ErrorTypes::UnknownError)?,
-                HeaderValue::from_str(&value)
-                    .map_err(|_| crate::errors::ErrorTypes::UnknownError)?,
-            );
+            insert_header(&mut headers, ACCEPT, "application/vnd.pgrst.object+json")?;
         }
 
         // send the request
         let response = self
             .client
             .client
-            .post(&endpoint)
-            .headers(header_map)
-            .json(&self.params)
+            .post(endpoint)
+            .headers(headers)
+            .json(&params)
             .send()
-            .await
-            .map_err(crate::errors::ErrorTypes::ReqwestError)?;
+            .await?;
 
         Ok(response)
     }
@@ -387,7 +392,7 @@ impl RpcBuilder {
     /// ```rust,no_run
     /// # use supabase_rs::SupabaseClient;
     /// # use serde_json::json;
-    /// # async fn example() -> Result<(), String> {
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
     /// # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
     /// let results = client.rpc("get_users", json!({}))
     ///     .eq("status", "active")

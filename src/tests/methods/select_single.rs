@@ -3,7 +3,7 @@ use crate::SupabaseClient;
 
 pub async fn select_single() {
     /// Tests that `.single()` returns exactly one row and fails if none or multiple exist.
-    async fn select_single_inner(client: SupabaseClient) -> Result<(), String> {
+    async fn select_single_inner(client: SupabaseClient) -> crate::Result<()> {
         // query to get exactly one row
         let res = client
             .select("users")

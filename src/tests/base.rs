@@ -55,93 +55,106 @@ mod methods {
         upsert_string::upsert_string as test_upsert_string,
     };
 
+    #[cfg(feature = "typegen")]
+    use crate::tests::methods::rpc::test_rpc_type_generation;
     #[cfg(feature = "rpc")]
     use crate::tests::methods::rpc::{
-        test_rpc, test_rpc_single, test_rpc_type_generation, test_rpc_void, test_rpc_with_filters,
+        test_rpc, test_rpc_single, test_rpc_void, test_rpc_with_filters,
     };
 
     /// Tests the `select_first` method of the crate.    
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn select_first() {
         test_select_first().await;
     }
 
     /// Tests the `select_single` method of the crate.    
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn select_single() {
         test_select_single().await;
     }
     /// Tests the `insert` method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn insert() {
         test_insert().await;
     }
 
     /// Tests the `insert` with a string method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn insert_string() {
         test_insert_string().await;
     }
 
     /// Tests the `insert` with a number method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn insert_numeric() {
         test_insert_numeric().await;
     }
 
     /// Tests the `insert_if_unique` method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn insert_if_unique_string() {
         test_insert_if_unique_string().await;
     }
 
     /// Tests the `insert_if_unique` method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn insert_if_unique_numeric() {
         test_insert_if_unique_numeric().await;
     }
 
     /// Tests the `select` method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn select() {
         test_select().await;
     }
 
     /// Tests the `select_filter` method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn select_filter() {
         test_select_filter().await;
     }
 
     /// Tests the `select_filter` method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn select_with_columns() {
         test_select_with_columns().await;
     }
 
     /// Tests the `select_filter` method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn select_with_count() {
         test_select_with_count().await;
     }
 
     /// Tests join/nested select: left join returns sections + empty instruments.
     #[tokio::test]
-    #[ignore]
+    #[ignore = "requires local Supabase stack"]
     async fn select_joins_left() {
         test_select_joins_left().await.expect("select_joins_left");
     }
 
     /// Tests join/nested select: inner join filters to flute section (woodwinds).
     #[tokio::test]
-    #[ignore]
+    #[ignore = "requires local Supabase stack"]
     async fn select_joins_inner() {
         test_select_joins_inner().await.expect("select_joins_inner");
     }
 
     /// Tests join/nested select: m2m teams -> members.
     #[tokio::test]
-    #[ignore]
+    #[ignore = "requires local Supabase stack"]
     async fn select_joins_m2m() {
         test_select_joins_m2m().await.expect("select_joins_m2m");
     }
@@ -154,24 +167,28 @@ mod methods {
 
     /// Tests the `select_filter` method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn delete() {
         test_delete().await;
     }
 
     /// Tests the `upsert` method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn upsert_string() {
         test_upsert_string().await;
     }
 
     /// Tests the `upsert` method of `SupabaseClient`.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn upsert_numeric() {
         test_upsert_numeric().await;
     }
 
     /// Tests the `update_with_column` method of `SupabaseClient` with a string value.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn update_with_column() {
         test_update_with_column().await;
     }
@@ -179,6 +196,7 @@ mod methods {
     /// Tests the `select_stacked_queries` method of `SupabaseClient`.
     /// This test is used to test the chaining of multiple `eq` methods in a single query.
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn select_stacked_queries() {
         test_select_stacked_queries().await;
     }
@@ -194,54 +212,63 @@ mod methods {
 
     /// Tests that the default schema is set to "public"
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn schema_default() {
         test_default_schema().await;
     }
 
     /// Tests that custom schema "zeus" can be set
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn schema_custom_zeus() {
         test_custom_schema_zeus().await;
     }
 
     /// Tests that schema method is chainable and immutable
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn schema_chaining() {
         test_schema_chaining().await;
     }
 
     /// Tests schema functionality with select operation (Accept-Profile header)
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn schema_with_select() {
         test_schema_with_select().await;
     }
 
     /// Tests schema functionality with insert operation (Content-Profile header)
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn schema_with_insert() {
         test_schema_with_insert().await;
     }
 
     /// Tests schema functionality with update operation (Content-Profile header)
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn schema_with_update() {
         test_schema_with_update().await;
     }
 
     /// Tests schema functionality with upsert operation (Content-Profile header)
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn schema_with_upsert() {
         test_schema_with_upsert().await;
     }
 
     /// Tests schema functionality with delete operation (Content-Profile header)
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn schema_with_delete() {
         test_schema_with_delete().await;
     }
 
     /// Runs all schema tests in sequence
     #[tokio::test]
+    #[ignore = "requires local Supabase stack"]
     async fn schema_all_tests() {
         run_all_schema_tests().await;
     }
@@ -251,6 +278,7 @@ mod methods {
     /// Tests the basic RPC execution
     #[tokio::test]
     #[cfg(feature = "rpc")]
+    #[ignore = "requires local Supabase stack"]
     async fn rpc_basic() {
         test_rpc().await;
     }
@@ -258,6 +286,7 @@ mod methods {
     /// Tests the RPC execute_single method
     #[tokio::test]
     #[cfg(feature = "rpc")]
+    #[ignore = "requires local Supabase stack"]
     async fn rpc_single() {
         test_rpc_single().await;
     }
@@ -265,6 +294,7 @@ mod methods {
     /// Tests the RPC execute_void method
     #[tokio::test]
     #[cfg(feature = "rpc")]
+    #[ignore = "requires local Supabase stack"]
     async fn rpc_void() {
         test_rpc_void().await;
     }
@@ -272,6 +302,7 @@ mod methods {
     /// Tests RPC with filter methods
     #[tokio::test]
     #[cfg(feature = "rpc")]
+    #[ignore = "requires local Supabase stack"]
     async fn rpc_with_filters() {
         test_rpc_with_filters().await;
     }
@@ -279,6 +310,8 @@ mod methods {
     /// Tests RPC type generation integration
     #[tokio::test]
     #[cfg(feature = "rpc")]
+    #[cfg(feature = "typegen")]
+    #[ignore = "requires local Supabase stack"]
     async fn rpc_type_generation() {
         test_rpc_type_generation().await;
     }

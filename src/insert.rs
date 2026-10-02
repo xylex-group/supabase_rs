@@ -1,21 +1,21 @@
 //! # Insert Operations
 //!
 //! This module provides comprehensive functionality for inserting new records into Supabase tables.
-//! It supports single inserts, bulk operations, and conditional inserts with automatic conflict detection.
+//! It supports single inserts, bulk operations, and inserts with a preflight duplicate check.
 //!
 //! ## 🎯 Core Features
 //!
-//! - **[`insert`]**: Standard insert with automatic ID generation
-//! - **[`insert_if_unique`]**: Conditional insert that prevents duplicates
-//! - **[`bulk_insert`]**: Efficient bulk operations for multiple records
-//! - **[`insert_with_generated_id`]**: Insert with client-side ID generation
+//! - **`insert`**: Standard insert with automatic ID generation
+//! - **`insert_if_unique`**: Insert after a non-atomic preflight duplicate check
+//! - **`bulk_insert`**: Efficient bulk operations for multiple records
+//! - **`insert_with_generated_id`**: Insert with client-side ID generation
 //!
 //! ## 🏗️ Operation Types
 //!
 //! | Method | ID Handling | Conflict Behavior | Performance | Use Case |
 //! |--------|-------------|-------------------|-------------|----------|
 //! | `insert` | Auto-generated or provided | Fails on conflict | ✅ Fast | Standard inserts |
-//! | `insert_if_unique` | Auto-generated | Checks uniqueness first | ⚠️ Slower | Prevent duplicates |
+//! | `insert_if_unique` | Auto-generated | Preflight check; database constraints remain authoritative | ⚠️ Slower | Best-effort duplicate check |
 //! | `bulk_insert` | Auto-generated or provided | Fails on any conflict | ✅ Fast | Multiple records |
 //! | `insert_with_generated_id` | Client-side random | Fails on conflict | ✅ Fast | Custom ID control |
 //!
@@ -29,12 +29,12 @@
 //!
 //! ## 🔧 Error Handling
 //!
-//! Insert operations return `Result<String, String>` where:
+//! Insert operations return the crate's typed `Result<T>` where:
 //! - **Success**: `Ok(String)` contains the ID of the inserted record
-//! - **Failure**: `Err(String)` contains a descriptive error message
+//! - **Failure**: `Error` identifies API, transport, serialization, or input failures
 //!
 //! ### Common Error Scenarios
-//! - **409 Conflict**: Duplicate entry violates unique constraint
+//! - **409 Conflict**: The database rejected an insert, for example when a unique constraint catches a race after the preflight check
 //! - **401 Unauthorized**: Invalid or missing API key
 //! - **403 Forbidden**: Insufficient permissions (check RLS policies)
 //! - **422 Unprocessable**: Invalid data format or missing required fields
@@ -47,7 +47,7 @@
 //! use supabase_rs::SupabaseClient;
 //! use serde_json::json;
 //!
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Simple insert with JSON
 //! let user_id = client.insert("users", json!({
@@ -76,7 +76,7 @@
 //!     verified: bool,
 //! }
 //!
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! let new_user = User {
 //!     name: "Bob Smith".to_string(),
@@ -90,21 +90,25 @@
 //! # }
 //! ```
 //!
-//! ### Conditional Insert (Prevent Duplicates)
+//! ### Conditional Insert with a Preflight Check
 //!
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
 //! # use serde_json::json;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
-//! // Insert only if no existing record matches ALL provided fields
+//! // Check for a matching row, then attempt the insert. This is not atomic;
+//! // use a database unique constraint when uniqueness must be guaranteed.
 //! match client.insert_if_unique("users", json!({
 //!     "email": "unique@example.com",
 //!     "username": "unique_user"
 //! })).await {
 //!     Ok(id) => println!("Created unique user with ID: {}", id),
-//!     Err(err) if err.contains("409") => {
-//!         println!("User already exists with this email or username");
+//!     Err(supabase_rs::Error::InvalidInput(message)) => {
+//!         println!("Preflight found a matching user: {}", message);
+//!     },
+//!     Err(supabase_rs::Error::Api(err)) if err.status == 409 => {
+//!         println!("Database rejected the insert, possibly due to a uniqueness race: {}", err.message);
 //!     },
 //!     Err(err) => println!("Insert failed: {}", err),
 //! }
@@ -117,7 +121,7 @@
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
 //! # use serde_json::json;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Insert multiple records efficiently
 //! let users = vec![
@@ -137,7 +141,7 @@
 //! ### Choosing the Right Insert Method
 //!
 //! 1. **`insert`**: Fastest option, use when you're confident about data uniqueness
-//! 2. **`insert_if_unique`**: Slower due to pre-check query, use when duplicates are likely
+//! 2. **`insert_if_unique`**: Adds a preflight query; use a database unique constraint for an actual uniqueness guarantee
 //! 3. **`bulk_insert`**: Most efficient for multiple records, single HTTP request
 //!
 //! ### Best Practices
@@ -145,7 +149,7 @@
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
 //! # use serde_json::json;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // ✅ Good: Batch multiple inserts
 //! let records = vec![json!({"name":"tom"})/* ... multiple records ... */];
@@ -159,9 +163,10 @@
 //! # }
 //! ```
 
+use crate::errors::{Error, Result};
 use crate::request::headers::HeadersTypes;
+use crate::success::handle_response;
 use crate::{generate_random_id, SupabaseClient};
-use reqwest::Response;
 use serde_json::{json, Value};
 
 impl SupabaseClient {
@@ -188,24 +193,18 @@ impl SupabaseClient {
     ///
     ///
     /// # Returns
-    /// This method returns a `Result<String, String>`. On success, it returns `Ok(String)` with the new row's ID,
-    /// and on failure, it returns `Err(String)` with an error message.
+    /// Returns the inserted row's ID or a typed SDK error.
     pub async fn insert_with_generated_id(
         &self,
         table_name: &str,
         mut body: Value,
-    ) -> Result<String, String> {
+    ) -> Result<String> {
         let endpoint: String = self.endpoint(table_name);
-
-        #[cfg(feature = "nightly")]
-        use crate::nightly::print_nightly_warning;
-        #[cfg(feature = "nightly")]
-        print_nightly_warning();
 
         let new_id: i64 = generate_random_id();
         body["id"] = json!(new_id);
 
-        let response: Response = match self
+        let response = self
             .client
             .post(&endpoint)
             .header(HeadersTypes::ApiKey, &self.api_key)
@@ -218,22 +217,10 @@ impl SupabaseClient {
             .header(HeadersTypes::ContentProfile.as_str(), self.schema.as_str())
             .body(body.to_string())
             .send()
-            .await
-        {
-            Ok(response) => response,
-            Err(e) => return Err(e.to_string()),
-        };
+            .await?;
 
-        if response.status().is_success() {
-            Ok(new_id.to_string())
-        } else if response.status().as_u16() == 409 {
-            println!("\x1b[31mError 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.\x1b[0m");
-
-            Err("Error 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.".to_owned())
-        } else {
-            println!("\x1b[31mError: {:?}\x1b[0m", response);
-            Err(response.status().to_string())
-        }
+        handle_response(response).await?;
+        Ok(new_id.to_string())
     }
 
     /// Inserts a new row into the specified table.
@@ -260,25 +247,16 @@ impl SupabaseClient {
     /// ```
     ///
     /// # Returns
-    /// This method returns a `Result<String, String>`. On success, it returns `Ok(String)` with the new row's ID,
-    /// and on failure, it returns `Err(String)` with an error message.
-    pub async fn insert<T>(&self, table_name: &str, body: T) -> Result<String, String>
+    /// Returns the inserted row's ID or a typed SDK error.
+    pub async fn insert<T>(&self, table_name: &str, body: T) -> Result<String>
     where
         T: serde::Serialize,
     {
-        let body = match serde_json::to_value(body) {
-            Ok(v) => v,
-            Err(e) => return Err(format!("Failed to serialize body: {}", e)),
-        };
+        let body = serde_json::to_value(body)?;
 
         let endpoint: String = self.endpoint(table_name);
 
-        #[cfg(feature = "nightly")]
-        use crate::nightly::print_nightly_warning;
-        #[cfg(feature = "nightly")]
-        print_nightly_warning();
-
-        let response: Response = match self
+        let response = self
             .client
             .post(&endpoint)
             .header(HeadersTypes::ApiKey, &self.api_key)
@@ -292,29 +270,26 @@ impl SupabaseClient {
             .header(HeadersTypes::ContentProfile.as_str(), self.schema.as_str())
             .body(body.to_string())
             .send()
-            .await
-        {
-            Ok(response) => response,
-            Err(e) => return Err(e.to_string()),
-        };
+            .await?;
 
-        if response.status().is_success() {
-            let res_text: String = match response.text().await {
-                Ok(text) => text,
-                Err(e) => return Err(format!("Failed to get response text: {}", e)),
-            };
-            let id: String = match serde_json::from_str::<Vec<Value>>(&res_text) {
-                Ok(json) => json[0]["id"].to_string(),
-                Err(e) => return Err(format!("Failed to parse response text: {}", e)),
-            };
-            Ok(id)
-        } else if response.status().as_u16() == 409 {
-            println!("\x1b[31mError 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.\x1b[0m");
-
-            Err("Error 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.".to_owned())
-        } else {
-            println!("\x1b[31mError: {:?}\x1b[0m", response);
-            Err(response.status().to_string())
+        let rows = handle_response(response).await?.data;
+        let id = rows.first().and_then(|row| row.get("id")).ok_or_else(|| {
+            Error::UnexpectedResponse {
+                message: "insert response did not contain an id".to_owned(),
+                status: None,
+                body: None,
+            }
+        })?;
+        match id {
+            Value::String(id) => Ok(id.clone()),
+            Value::Number(id) => Ok(id.to_string()),
+            Value::Null | Value::Bool(_) | Value::Array(_) | Value::Object(_) => {
+                Err(Error::UnexpectedResponse {
+                    message: "insert response id was not a string or number".to_owned(),
+                    status: None,
+                    body: None,
+                })
+            }
         }
     }
 
@@ -343,20 +318,19 @@ impl SupabaseClient {
     /// ```
     ///
     /// # Returns
-    /// This method returns a `Result<(), String>`. On success, it returns `Ok(())`,
-    /// and on failure, it returns `Err(String)` with an error message.
-    pub async fn insert_without_defined_key<T>(
-        &self,
-        table_name: &str,
-        body: T,
-    ) -> Result<String, String>
+    /// Returns the inserted row's ID or a typed SDK error.
+    pub async fn insert_without_defined_key<T>(&self, table_name: &str, body: T) -> Result<String>
     where
         T: serde::Serialize,
     {
         self.insert(table_name, body).await
     }
 
-    /// Inserts a row into the specified table if the value is unique and does not exist in the table already.
+    /// Inserts a row after checking that no matching row currently exists.
+    ///
+    /// This check is not atomic. Concurrent calls can both pass the check, so use a database
+    /// unique constraint as the authority when uniqueness must be guaranteed. PostgREST errors
+    /// from the insert, including unique-constraint violations, are returned unchanged.
     ///
     /// # Arguments
     /// * `table_name` - A string slice that holds the name of the table.
@@ -369,9 +343,9 @@ impl SupabaseClient {
     /// #[tokio::main]
     /// async fn main() {
     ///     // Initialize the Supabase client
-    ///     let client = SupabaseClient::new("your_supabase_url".to_string(), "your_supabase_key".to_string()).unwrap();
+    ///     let client = SupabaseClient::new("http://localhost", "your_supabase_key").unwrap();
     ///
-    ///     // This will insert a new row into the table if the value is unique
+    ///     // This checks for a matching row before attempting the insert.
     ///     let unique_insert_result = client.insert_if_unique(
     ///         "your_table_name",
     ///         json!({"unique_column_name": "unique_value"})
@@ -380,22 +354,20 @@ impl SupabaseClient {
     /// ```
     ///
     /// # Returns
-    /// This method returns a `Result<String, String>`. On success, it returns `Ok(String)` with the new row's ID,
-    /// and on failure, it returns `Err(String)` with an error message indicating a duplicate entry.
-    pub async fn insert_if_unique<T>(&self, table_name: &str, body: T) -> Result<String, String>
+    /// Returns the inserted row's ID or a typed SDK error. If a matching row is found by the
+    /// preflight query, returns an input error.
+    pub async fn insert_if_unique<T>(&self, table_name: &str, body: T) -> Result<String>
     where
         T: serde::Serialize + Clone,
     {
-        let body = match serde_json::to_value(body.clone()) {
-            Ok(v) => v,
-            Err(e) => return Err(format!("Failed to serialize body: {}", e)),
-        };
+        let body = serde_json::to_value(body.clone())?;
 
         let conditions: &serde_json::Map<String, Value> = match body.as_object() {
             Some(map) => map,
             None => {
-                println!("\x1b[31mFailed to parse body as JSON object\x1b[0m");
-                return Err("Failed to parse body as JSON object".to_owned());
+                return Err(Error::InvalidInput(
+                    "insert body must be a JSON object".to_owned(),
+                ))
             }
         };
 
@@ -417,19 +389,15 @@ impl SupabaseClient {
             query = query.eq(column_name, column_value_str.as_str());
         }
 
-        let response: Result<Vec<Value>, String> = query.execute().await;
+        let results = query.execute().await?;
 
-        // If no existing row matches all conditions, proceed with the insert
-        if let Ok(results) = response {
-            if results.is_empty() {
-                return self.insert(table_name, body).await;
-            }
-        } else {
-            println!("\x1b[31mFailed to execute select query\x1b[0m");
-            return Err("Failed to execute select query".to_owned());
+        if results.is_empty() {
+            return self.insert(table_name, body).await;
         }
 
-        Err("Error 409: Duplicate entry. The values you're trying to insert may already exist in a column with a UNIQUE constraint".to_owned())
+        Err(Error::InvalidInput(
+            "a matching row was found by the preflight check".to_owned(),
+        ))
     }
 
     /// Inserts new rows into the specified table in bulk.
@@ -464,23 +432,15 @@ impl SupabaseClient {
     /// ```
     ///
     /// # Returns
-    /// This method returns a `Result<(), String>`. On success, it returns `Ok(())`,
-    /// and on failure, it returns `Err(String)` with an error message.
-    pub async fn bulk_insert<T>(&self, table_name: &str, body: Vec<T>) -> Result<(), String>
+    /// Returns success or a typed SDK error.
+    pub async fn bulk_insert<T>(&self, table_name: &str, body: Vec<T>) -> Result<()>
     where
         T: serde::Serialize,
     {
-        let Ok(body) = serde_json::to_value(body) else {
-            return Err("Failed to serialize body".to_owned());
-        };
+        let body = serde_json::to_value(body)?;
         let endpoint: String = self.endpoint(table_name);
 
-        #[cfg(feature = "nightly")]
-        use crate::nightly::print_nightly_warning;
-        #[cfg(feature = "nightly")]
-        print_nightly_warning();
-
-        let response: Response = match self
+        let response = self
             .client
             .post(&endpoint)
             .header(HeadersTypes::ApiKey, &self.api_key)
@@ -493,21 +453,9 @@ impl SupabaseClient {
             .header(HeadersTypes::ContentProfile.as_str(), self.schema.as_str())
             .body(body.to_string())
             .send()
-            .await
-        {
-            Ok(response) => response,
-            Err(e) => return Err(e.to_string()),
-        };
+            .await?;
 
-        if response.status().is_success() {
-            Ok(())
-        } else if response.status().as_u16() == 409 {
-            println!("\x1b[31mError 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.\x1b[0m");
-
-            Err("Error 409: Duplicate entry. The value you're trying to insert may already exist in a column with a UNIQUE constraint.".to_owned())
-        } else {
-            println!("\x1b[31mError: {:?}\x1b[0m", response);
-            Err(response.status().to_string())
-        }
+        handle_response(response).await?;
+        Ok(())
     }
 }

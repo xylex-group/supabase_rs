@@ -1,16 +1,16 @@
-#![cfg(feature = "nightly")]
+#![cfg(feature = "graphql")]
 
 //! # GraphQL Support for Supabase
 //!
 //! This module provides experimental GraphQL capabilities for advanced querying and data manipulation.
 //! It complements the REST API with more flexible query structures and relational data fetching.
 //!
-//! > **⚠️ Experimental Feature**: This module requires the `nightly` feature flag and is not recommended for production use.
+//! > **⚠️ Experimental Feature**: This module requires the `graphql` feature flag and is not recommended for production use.
 //!
 //! ## 🎯 Core Features
 //!
 //! - **[`Query`]**: Execute GraphQL queries for complex data retrieval
-//! - **[`Request`]**: Build and send GraphQL requests with variables
+//! - **[`crate::graphql::request::Request`]**: Build and send GraphQL requests with variables
 //! - **[`RootTypes`]**: Type-safe operation classification (Query, Mutation, Subscription)
 //! - **Variable Support**: Dynamic query parameters with type safety
 //! - **Error Handling**: Structured GraphQL error responses
@@ -265,7 +265,7 @@ pub struct Query {
 ///
 /// # Examples
 ///
-/// ```rust,no_run
+/// ```text
 /// use supabase_rs::graphql::RootTypes;
 ///
 /// // Specify operation type for request
@@ -276,20 +276,7 @@ pub struct Query {
 /// // let request = Request::new(client, query_json, RootTypes::Query);
 /// ```
 ///
-/// ## Future Operations
-///
-/// ```rust,no_run
-/// // These will be supported in future versions:
-///
-/// // Mutations for data modification
-/// // RootTypes::Mutation
-///
-/// // Subscriptions for real-time updates  
-/// // RootTypes::Subscription
-///
-/// // Fragments for query reuse
-/// // RootTypes::Fragment
-/// ```
+/// Only `Query` is supported; other operation kinds are reserved and currently experimental.
 #[derive(Debug)]
 pub enum RootTypes {
     /// Data retrieval operations (fully supported)

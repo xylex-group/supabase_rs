@@ -31,14 +31,34 @@ jobs:
       - name: Start Supabase
         run: supabase start
 
-      - name: Build
-        run: cargo build --verbose
+      - name: Reset local database and load fixtures
+        run: supabase db reset
 
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Build
+        run: cargo build --all-features --verbose
+
+      - name: Run unit, HTTP contract, and local Supabase tests
+        run: cargo test --all-features --lib -- --include-ignored --test-threads=1
         env:
           SUPABASE_URL: http://127.0.0.1:54321
           SUPABASE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+
+      - name: Run documentation tests
+        run: cargo test --all-features --doc
+
+      - name: Check no-default-features build
+        run: cargo check --no-default-features
+
+      - name: Build documentation with warnings denied
+        run: cargo doc --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+      - name: Verify package contents
+        run: cargo package
+
+      - name: Validate Cargo metadata
+        run: cargo metadata --format-version 1 --no-deps
 
   format:
     runs-on: ubuntu-latest
