@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.8.0] (unreleased)
+## [0.8.0](https://github.com/xylex-group/supabase_rs/compare/v0.7.0...v0.8.0) (2026-10-02)
 
 ### Changed
 
