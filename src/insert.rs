@@ -1,12 +1,12 @@
 //! # Insert Operations
 //!
 //! This module provides comprehensive functionality for inserting new records into Supabase tables.
-//! It supports single inserts, bulk operations, and conditional inserts with automatic conflict detection.
+//! It supports single inserts, bulk operations, and inserts with a preflight duplicate check.
 //!
 //! ## 🎯 Core Features
 //!
 //! - **`insert`**: Standard insert with automatic ID generation
-//! - **`insert_if_unique`**: Conditional insert that prevents duplicates
+//! - **`insert_if_unique`**: Insert after a non-atomic preflight duplicate check
 //! - **`bulk_insert`**: Efficient bulk operations for multiple records
 //! - **`insert_with_generated_id`**: Insert with client-side ID generation
 //!
@@ -15,7 +15,7 @@
 //! | Method | ID Handling | Conflict Behavior | Performance | Use Case |
 //! |--------|-------------|-------------------|-------------|----------|
 //! | `insert` | Auto-generated or provided | Fails on conflict | ✅ Fast | Standard inserts |
-//! | `insert_if_unique` | Auto-generated | Checks uniqueness first | ⚠️ Slower | Prevent duplicates |
+//! | `insert_if_unique` | Auto-generated | Preflight check; database constraints remain authoritative | ⚠️ Slower | Best-effort duplicate check |
 //! | `bulk_insert` | Auto-generated or provided | Fails on any conflict | ✅ Fast | Multiple records |
 //! | `insert_with_generated_id` | Client-side random | Fails on conflict | ✅ Fast | Custom ID control |
 //!
@@ -34,7 +34,7 @@
 //! - **Failure**: `Error` identifies API, transport, serialization, or input failures
 //!
 //! ### Common Error Scenarios
-//! - **409 Conflict**: Duplicate entry violates unique constraint
+//! - **409 Conflict**: The database rejected an insert, for example when a unique constraint catches a race after the preflight check
 //! - **401 Unauthorized**: Invalid or missing API key
 //! - **403 Forbidden**: Insufficient permissions (check RLS policies)
 //! - **422 Unprocessable**: Invalid data format or missing required fields
@@ -90,21 +90,25 @@
 //! # }
 //! ```
 //!
-//! ### Conditional Insert (Prevent Duplicates)
+//! ### Conditional Insert with a Preflight Check
 //!
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
 //! # use serde_json::json;
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
-//! // Insert only if no existing record matches ALL provided fields
+//! // Check for a matching row, then attempt the insert. This is not atomic;
+//! // use a database unique constraint when uniqueness must be guaranteed.
 //! match client.insert_if_unique("users", json!({
 //!     "email": "unique@example.com",
 //!     "username": "unique_user"
 //! })).await {
 //!     Ok(id) => println!("Created unique user with ID: {}", id),
+//!     Err(supabase_rs::Error::InvalidInput(message)) => {
+//!         println!("Preflight found a matching user: {}", message);
+//!     },
 //!     Err(supabase_rs::Error::Api(err)) if err.status == 409 => {
-//!         println!("User already exists with this email or username");
+//!         println!("Database rejected the insert, possibly due to a uniqueness race: {}", err.message);
 //!     },
 //!     Err(err) => println!("Insert failed: {}", err),
 //! }
@@ -137,7 +141,7 @@
 //! ### Choosing the Right Insert Method
 //!
 //! 1. **`insert`**: Fastest option, use when you're confident about data uniqueness
-//! 2. **`insert_if_unique`**: Slower due to pre-check query, use when duplicates are likely
+//! 2. **`insert_if_unique`**: Adds a preflight query; use a database unique constraint for an actual uniqueness guarantee
 //! 3. **`bulk_insert`**: Most efficient for multiple records, single HTTP request
 //!
 //! ### Best Practices
@@ -341,7 +345,7 @@ impl SupabaseClient {
     ///     // Initialize the Supabase client
     ///     let client = SupabaseClient::new("http://localhost", "your_supabase_key").unwrap();
     ///
-    ///     // This will insert a new row into the table if the value is unique
+    ///     // This checks for a matching row before attempting the insert.
     ///     let unique_insert_result = client.insert_if_unique(
     ///         "your_table_name",
     ///         json!({"unique_column_name": "unique_value"})

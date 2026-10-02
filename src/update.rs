@@ -25,7 +25,7 @@
 //!
 //! | Scenario | Recommended Method | Reason |
 //! |----------|-------------------|---------|
-//! | Record definitely exists | `update` | Fastest, fails fast if missing |
+//! | A missing row is an acceptable no-op | `update` | Reports zero affected rows when no row matches |
 //! | Record may or may not exist | `upsert` | Handles both cases gracefully |
 //! | Bulk operations with mixed states | `upsert_without_defined_key` | Automatic conflict handling |
 //! | Need to update by non-ID field | `update_with_column_name` | Flexible targeting |

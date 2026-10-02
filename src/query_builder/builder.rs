@@ -428,8 +428,8 @@ impl Query {
                 crate::query::Operator::LessThanOrEquals => "lte",
             };
             (
-                format!("{}.{}", filter.column, operator),
-                filter.value.clone(),
+                filter.column.clone(),
+                format!("{operator}.{}", filter.value),
             )
         }));
         if !self.sorts.is_empty() {

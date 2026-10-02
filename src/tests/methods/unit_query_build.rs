@@ -33,7 +33,7 @@ fn build_encodes_query_keys_and_values() {
 
     assert_eq!(
         query.build(),
-        "select=id%2Cname&name%26select.eq=Ada%26role%3Deq.admin"
+        "select=id%2Cname&name%26select=eq.Ada%26role%3Deq.admin"
     );
 }
 
