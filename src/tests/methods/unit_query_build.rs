@@ -36,3 +36,27 @@ async fn select_with_joins_builds_postgrest_select() {
         s
     );
 }
+
+#[test]
+fn client_builder_uses_explicit_schema_and_rest_prefix() {
+    let client = crate::SupabaseClient::builder("https://example.supabase.co", "key")
+        .schema("tenant")
+        .rest_prefix("api/v2")
+        .build()
+        .expect("valid client configuration");
+
+    assert_eq!(client.schema, "tenant");
+    assert_eq!(
+        client.endpoint("users/team members"),
+        "https://example.supabase.co/api/v2/users%2Fteam%20members"
+    );
+
+    let root_client = crate::SupabaseClient::builder("https://example.supabase.co", "key")
+        .rest_prefix("")
+        .build()
+        .expect("valid root endpoint configuration");
+    assert_eq!(
+        root_client.endpoint("users"),
+        "https://example.supabase.co/users"
+    );
+}

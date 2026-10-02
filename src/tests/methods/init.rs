@@ -6,10 +6,11 @@ use std::env::var;
 pub async fn init() -> Result<SupabaseClient> {
     dotenv().ok();
 
-    let supabase_url: String = var("SUPABASE_URL")?;
-    let supabase_key: String = var("SUPABASE_KEY")?;
+    let supabase_url: String = var("SUPABASE_URL").expect("integration tests require SUPABASE_URL");
+    let supabase_key: String = var("SUPABASE_KEY").expect("integration tests require SUPABASE_KEY");
 
-    SupabaseClient::new(supabase_url, supabase_key)
+    Ok(SupabaseClient::new(supabase_url, supabase_key)
+        .expect("valid local Supabase client configuration"))
 }
 
 #[cfg(feature = "rpc")]
@@ -22,7 +23,7 @@ pub async fn setup_rpc_functions() -> Result<()> {
     // Try to get database credentials from environment variables
     // Default to local Supabase credentials
     let db_host = var("SUPABASE_DB_HOST").unwrap_or_else(|_| "127.0.0.1".to_owned());
-    let db_port = var("SUPABASE_DB_PORT").unwrap_or_else(|_| "5432".to_owned());
+    let db_port = var("SUPABASE_DB_PORT").unwrap_or_else(|_| "54322".to_owned());
     let db_user = var("SUPABASE_DB_USER").unwrap_or_else(|_| "postgres".to_owned());
     let db_password = var("SUPABASE_DB_PASSWORD").unwrap_or_else(|_| "postgres".to_owned());
     let db_name = var("SUPABASE_DB_NAME").unwrap_or_else(|_| "postgres".to_owned());
@@ -30,7 +31,7 @@ pub async fn setup_rpc_functions() -> Result<()> {
     // Read SQL file
     let sql_content = fs::read_to_string("src/tests/setup_rpc.sql").map_err(|e| {
         eprintln!("Failed to read SQL file: {}", e);
-        crate::errors::ErrorTypes::UnknownError
+        crate::errors::Error::Configuration(e.to_string())
     })?;
 
     // Connect to database
@@ -44,7 +45,7 @@ pub async fn setup_rpc_functions() -> Result<()> {
 
     let (client, connection) = config.connect(NoTls).await.map_err(|e| {
         eprintln!("Failed to connect to database: {}", e);
-        crate::errors::ErrorTypes::UnknownError
+        crate::errors::Error::Configuration(e.to_string())
     })?;
 
     // Spawn connection driver
@@ -57,7 +58,7 @@ pub async fn setup_rpc_functions() -> Result<()> {
     // Execute SQL
     client.batch_execute(&sql_content).await.map_err(|e| {
         eprintln!("Failed to execute RPC setup SQL: {}", e);
-        crate::errors::ErrorTypes::UnknownError
+        crate::errors::Error::Configuration(e.to_string())
     })?;
 
     Ok(())

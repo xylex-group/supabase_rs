@@ -30,11 +30,13 @@ The RPC implementation integrates seamlessly into the existing `supabase_rs` arc
 
 ## Feature Flags
 
+RPC is optional; enable it with the `rpc` feature. GraphQL uses the separate experimental `graphql` feature.
+
 RPC functionality is feature-gated. To enable it, add the `rpc` feature to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-supabase_rs = { version = "0.5.1", features = ["rpc"] }
+supabase_rs = { version = "0.8.0", features = ["rpc"] }
 ```
 
 ### Available Features
@@ -43,13 +45,13 @@ supabase_rs = { version = "0.5.1", features = ["rpc"] }
 | `rpc` | Enables RPC functionality | ❌ Disabled |
 | `storage` | File operations with Supabase Storage | ❌ Disabled |
 | `rustls` | Use rustls instead of OpenSSL for TLS | ❌ Disabled |
-| `nightly` | Experimental GraphQL support | ❌ Disabled |
+| `graphql` | Experimental GraphQL support | ❌ Disabled |
 
 ### Default Features
-The default feature set includes `native_tls` and `nightly`. To use RPC without nightly features:
+The default feature set includes `native_tls`. To use RPC with default TLS settings:
 
 ```toml
-supabase_rs = { version = "0.5.1", features = ["rpc", "native_tls"], default-features = false }
+supabase_rs = { version = "0.8.0", features = ["rpc", "native_tls"], default-features = false }
 ```
 
 ## API Reference
@@ -511,7 +513,7 @@ Tests error scenarios:
 #### Example Test Structure
 ```rust
 #[tokio::test]
-async fn test_custom_rpc() -> Result<(), String> {
+async fn test_custom_rpc() -> Result<(), Box<dyn std::error::Error>> {
     let client = create_test_client();
     
     // Test scalar function
@@ -543,7 +545,7 @@ RPC support is additive and non-breaking. Existing code continues to work withou
 #### Enabling RPC
 1. Update `Cargo.toml`:
    ```toml
-   supabase_rs = { version = "0.5.1", features = ["rpc"] }
+   supabase_rs = { version = "0.8.0", features = ["rpc"] }
    ```
 
 2. Update imports if using generated types:
@@ -661,12 +663,12 @@ The RPC implementation in `supabase_rs` provides a comprehensive, type-safe inte
 ### Additional Resources
 - [Supabase Documentation](https://supabase.io/docs) - Official Supabase documentation
 - [PostgREST API Reference](https://postgrest.org/en/stable/api.html) - Detailed API reference
-- [GitHub Repository](https://github.com/floris-xlx/supabase_rs) - Source code and issue tracking
+- [GitHub Repository](https://github.com/xylex-group/supabase_rs) - Source code and issue tracking
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines for the project
 
 ### Support
 For issues, feature requests, or questions:
-1. Check the [GitHub Issues](https://github.com/floris-xlx/supabase_rs/issues) for existing discussions
+1. Check the [GitHub Issues](https://github.com/xylex-group/supabase_rs/issues) for existing discussions
 2. Review the [RPC Design Documents](RPC_DESIGN_V2.md) for implementation details
 3. Submit a new issue with detailed reproduction steps if needed
 
@@ -674,4 +676,4 @@ For issues, feature requests, or questions:
 
 *Documentation last updated: January 2026*
 *RPC Implementation Version: 1.0*
-*Supabase RS Version: 0.5.1*
+*Supabase RS Version: 0.8.0*

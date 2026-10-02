@@ -6,8 +6,8 @@
 //!
 //! ## 🎯 Core Features
 //!
-//! - **[`delete`]**: Remove records by ID (most common)
-//! - **[`delete_without_defined_key`]**: Remove records by custom column matching
+//! - **`delete`**: Remove records by ID (most common)
+//! - **`delete_without_defined_key`**: Remove records by custom column matching
 //! - **Safety Measures**: Built-in safeguards against accidental bulk deletions
 //! - **Error Handling**: Clear feedback for failed operations
 //!
@@ -32,7 +32,7 @@
 //! ```rust,no_run
 //! use supabase_rs::SupabaseClient;
 //!
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Delete by ID (most common and safest)
 //! client.delete("users", "123").await?;
@@ -42,7 +42,7 @@
 //! match client.delete("posts", "456").await {
 //!     Ok(_) => println!("✅ Post deleted"),
 //!     Err(err) => {
-//!         if err.contains("404") {
+//!         if matches!(&err, supabase_rs::Error::Api(api) if api.status == 404) {
 //!             println!("⚠️ Post not found (may already be deleted)");
 //!         } else {
 //!             println!("❌ Delete failed: {}", err);
@@ -57,7 +57,7 @@
 //!
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Delete session by token
 //! client.delete_without_defined_key("sessions", "token", "abc123xyz").await?;
@@ -75,25 +75,25 @@
 //!
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Comprehensive error handling for delete operations
-//! async fn safe_delete(client: &SupabaseClient, table: &str, id: &str) -> Result<(), String> {
+//! async fn safe_delete(client: &SupabaseClient, table: &str, id: &str) -> supabase_rs::Result<()> {
 //!     match client.delete(table, id).await {
 //!         Ok(_) => {
 //!             println!("✅ Record deleted successfully");
 //!             Ok(())
 //!         },
 //!         Err(err) => {
-//!             if err.contains("404") {
+//!             if matches!(&err, supabase_rs::Error::Api(api) if api.status == 404) {
 //!                 println!("⚠️ Record not found (may already be deleted)");
 //!                 Ok(()) // Treat as success - desired state achieved
-//!             } else if err.contains("403") {
+//!             } else if matches!(&err, supabase_rs::Error::Api(api) if api.status == 403) {
 //!                 println!("🚫 Permission denied - check RLS policies");
-//!                 Err("Insufficient permissions for delete operation".to_string())
-//!             } else if err.contains("409") {
+//!                 Err(err)
+//!             } else if matches!(&err, supabase_rs::Error::Api(api) if api.status == 409) {
 //!                 println!("⚠️ Cannot delete - record has dependent references");
-//!                 Err("Delete blocked by foreign key constraints".to_string())
+//!                 Err(err)
 //!             } else {
 //!                 println!("❌ Unexpected delete error: {}", err);
 //!                 Err(err)
@@ -111,7 +111,7 @@
 //!
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // ✅ Good: Verify record exists before deletion
 //! let users = client.select("users").eq("id", "123").execute().await?;
@@ -141,7 +141,7 @@
 //! ```rust,no_run
 //! # use supabase_rs::SupabaseClient;
 //! # use serde_json::json;
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Soft delete - mark as deleted instead of removing
 //! client.update("users", "123", json!({
@@ -159,9 +159,10 @@
 //! # }
 //! ```
 
+use crate::errors::Result;
 use crate::request::headers::HeadersTypes;
+use crate::success::handle_response;
 use crate::SupabaseClient;
-use reqwest::Response;
 use serde_json::json;
 
 impl SupabaseClient {
@@ -173,20 +174,16 @@ impl SupabaseClient {
     /// * `body` - A JSON value containing the body of the request, typically specifying conditions for deletion.
     ///
     /// # Returns
-    /// This method returns a `Result<(), String>`. On success, it returns `Ok(())`, and on failure, it returns
-    /// `Err(String)` with an error message.
+    /// Returns success or a typed SDK error.
     ///
     /// # Examples
-    /// ```
+    /// ```rust,no_run
     /// use serde_json::json;
     /// use supabase_rs::SupabaseClient;
     ///
     /// #[tokio::main]
     /// async fn main() {
-    ///     let client = SupabaseClient::new(
-    ///         "your_supabase_url".to_string(),
-    ///         "your_supabase_key".to_string()
-    ///     ).unwrap();
+    ///     let client = SupabaseClient::new("http://localhost", "your_supabase_key").unwrap();
     ///     let result = client.delete("your_table_name", "row_id").await;
     ///     match result {
     ///         Ok(_) => println!("Row deleted successfully"),
@@ -199,20 +196,15 @@ impl SupabaseClient {
         table_name: &str,
         id: &str,
         //body: Value
-    ) -> Result<(), String> {
+    ) -> Result<()> {
         // Construct the endpoint URL for the delete operation
         let endpoint: String = self.endpoint(table_name);
         let endpoint: String = format!("{endpoint}?id=eq.{id}");
 
-        #[cfg(feature = "nightly")]
-        use crate::nightly::print_nightly_warning;
-        #[cfg(feature = "nightly")]
-        print_nightly_warning();
-
         let body: serde_json::Value = json!({}); // this is temporary, will be used for more complex queries
 
         // Send the delete request and handle the response
-        let response: Response = match self
+        let response = self
             .client
             .delete(&endpoint)
             .header(HeadersTypes::ApiKey, &self.api_key)
@@ -225,18 +217,10 @@ impl SupabaseClient {
             .header(HeadersTypes::ContentProfile.as_str(), self.schema.as_str())
             .body(body.to_string())
             .send()
-            .await
-        {
-            Ok(response) => response,
-            Err(error) => return Err(error.to_string()),
-        };
+            .await?;
 
-        // Check the HTTP status code of the response
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(response.status().to_string())
-        }
+        handle_response(response).await?;
+        Ok(())
     }
 
     pub async fn delete_without_defined_key(
@@ -244,20 +228,15 @@ impl SupabaseClient {
         table_name: &str,
         key: &str,
         value: &str,
-    ) -> Result<(), String> {
+    ) -> Result<()> {
         // Construct the endpoint URL for the delete operation with dynamic key
         let endpoint: String = self.endpoint(table_name);
         let endpoint: String = format!("{endpoint}?{key}=eq.{value}");
 
-        #[cfg(feature = "nightly")]
-        use crate::nightly::print_nightly_warning;
-        #[cfg(feature = "nightly")]
-        print_nightly_warning();
-
         let body: serde_json::Value = json!({});
 
         // Send the delete request and handle the response
-        let response: Response = match self
+        let response = self
             .client
             .delete(&endpoint)
             .header(HeadersTypes::ApiKey, &self.api_key)
@@ -270,17 +249,9 @@ impl SupabaseClient {
             .header(HeadersTypes::ContentProfile.as_str(), self.schema.as_str())
             .body(body.to_string())
             .send()
-            .await
-        {
-            Ok(response) => response,
-            Err(error) => return Err(error.to_string()),
-        };
+            .await?;
 
-        // Check the HTTP status code of the response
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(response.status().to_string())
-        }
+        handle_response(response).await?;
+        Ok(())
     }
 }

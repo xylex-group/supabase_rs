@@ -44,7 +44,7 @@
 //! ```rust,no_run
 //! use supabase_rs::query::{Filter, Operator, Query, Sort, SortOrder};
 //!
-//! # fn example() -> Result<(), String> {
+//! # fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! // Build a query manually (low-level API)
 //! let mut query = Query::new();
 //!
@@ -76,7 +76,7 @@
 //! use supabase_rs::SupabaseClient;
 //! use serde_json::Value;
 //!
-//! # async fn example() -> Result<(), String> {
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Use the fluent QueryBuilder API (high-level, recommended)
 //! let results: Vec<Value> = client
@@ -321,7 +321,7 @@ pub struct Query {
 /// use supabase_rs::SupabaseClient;
 /// use serde_json::Value;
 ///
-/// # async fn example() -> Result<(), String> {
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 /// let users: Vec<Value> = client
 ///     .select("users")
@@ -338,7 +338,7 @@ pub struct Query {
 /// ```rust,no_run
 /// # use supabase_rs::SupabaseClient;
 /// # use serde_json::Value;
-/// # async fn example() -> Result<(), String> {
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 /// # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 /// let products: Vec<Value> = client
 ///     .from("products")

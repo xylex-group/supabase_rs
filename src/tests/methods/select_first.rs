@@ -4,7 +4,7 @@ use crate::SupabaseClient;
 pub async fn select_first() {
     /// Tests that `.first()` returns the first matching row as `Some(Value)`
     /// or `None` if no rows match, without error.
-    async fn select_first_inner(client: SupabaseClient) -> Result<(), String> {
+    async fn select_first_inner(client: SupabaseClient) -> crate::Result<()> {
         let res = client.select("users").order("id", true).first().await;
 
         match res {

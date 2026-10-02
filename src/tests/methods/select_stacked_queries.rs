@@ -3,7 +3,7 @@ use crate::SupabaseClient;
 
 pub async fn select_stacked_queries() {
     /// Performs a select_filter operation in an isolated scope.
-    async fn select_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn select_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Usage example
         let response_inner = supabase_client
             .select("users")
@@ -31,7 +31,7 @@ pub async fn select_stacked_queries() {
             return;
         }
     };
-    let response: Result<(), String> = select_inner(supabase_client).await;
+    let response = select_inner(supabase_client).await;
 
     response.expect("Stacked queries operation should succeed");
 }

@@ -54,7 +54,7 @@ pub async fn generate_supabase_types(
 ///
 /// This function extends `generate_supabase_types` with schema-aware type generation.
 /// It generates:
-/// 1. Primary and New<T> structs for each table
+/// 1. Primary and `New<T>` structs for each table
 /// 2. Helper methods for column names and table names
 /// 3. RPC function argument structs in a separate `rpc` module
 ///
@@ -256,9 +256,10 @@ pub async fn generate_supabase_types_with_schema(
         .await
         .expect("simple_query for rpc functions")
         .into_iter()
-        .filter_map(|m| match m {
-            SimpleQueryMessage::Row(r) => Some(r),
-            SimpleQueryMessage::CommandComplete(_) | SimpleQueryMessage::RowDescription(_) | _ => {
+        .filter_map(|message| {
+            if let SimpleQueryMessage::Row(row) = message {
+                Some(row)
+            } else {
                 None
             }
         })
@@ -356,7 +357,7 @@ pub async fn generate_supabase_types_with_schema(
         }
         output.push_str("}\n\n");
 
-        // — New<T> struct
+        // — `New<T>` struct
         let new_name: String = format!("New{struct_name}");
         output.push_str(&format!(
             "#[derive(Debug, Serialize, Deserialize, Clone, Default)]\n\

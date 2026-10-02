@@ -1,4 +1,5 @@
 pub mod base;
+pub mod http_contract;
 
 pub mod methods {
     pub mod delete;

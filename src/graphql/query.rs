@@ -3,7 +3,7 @@ use anyhow::Result;
 use crate::graphql::parse::parse_outer;
 use crate::graphql::Query;
 
-// FIX ME: This is a temporary fix to suppress the warning
+/// Experimental GraphQL query validation.
 impl Query {
     /// # Verify the query
     ///

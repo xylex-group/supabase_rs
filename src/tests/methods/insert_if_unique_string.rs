@@ -4,11 +4,11 @@ use serde_json::json;
 
 pub async fn insert_if_unique_string() {
     /// Performs an insert_if_unique operation in an isolated scope.
-    async fn insert_if_unique_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn insert_if_unique_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Usage example
         let random_string: String = rand::random::<u64>().to_string();
 
-        let response_inner: Result<String, String> = supabase_client
+        let response_inner = supabase_client
             .insert_if_unique(
                 "users",
                 json!({
@@ -37,7 +37,7 @@ pub async fn insert_if_unique_string() {
             return;
         }
     };
-    let response: Result<(), String> = insert_if_unique_inner(supabase_client).await;
+    let response = insert_if_unique_inner(supabase_client).await;
 
     response.expect("insert_if_unique_inner failed");
 }

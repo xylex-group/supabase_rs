@@ -6,11 +6,14 @@ use serde_json::json;
 
 pub async fn test_rpc() {
     /// Performs an RPC operation in an isolated scope.
-    async fn rpc_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn rpc_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Setup RPC functions first
         if let Err(e) = setup_rpc_functions().await {
             eprintln!("Failed to setup RPC functions: {:?}", e);
-            return Err(format!("Setup failed: {:?}", e));
+            return Err(crate::Error::Configuration(format!(
+                "Setup failed: {:?}",
+                e
+            )));
         }
 
         // Test echo function
@@ -27,7 +30,7 @@ pub async fn test_rpc() {
             }
             Err(e) => {
                 eprintln!("RPC echo test failed: {:?}", e);
-                Err(format!("RPC failed: {:?}", e))
+                Err(crate::Error::Configuration(format!("RPC failed: {:?}", e)))
             }
         }
     }
@@ -43,17 +46,20 @@ pub async fn test_rpc() {
         }
     };
 
-    let response: Result<(), String> = rpc_inner(supabase_client).await;
+    let response = rpc_inner(supabase_client).await;
     response.unwrap();
 }
 
 pub async fn test_rpc_single() {
     /// Tests the execute_single() method with various function types
-    async fn rpc_single_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn rpc_single_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Setup RPC functions first
         if let Err(e) = setup_rpc_functions().await {
             eprintln!("Failed to setup RPC functions: {:?}", e);
-            return Err(format!("Setup failed: {:?}", e));
+            return Err(crate::Error::Configuration(format!(
+                "Setup failed: {:?}",
+                e
+            )));
         }
 
         // Test scalar function with execute_single
@@ -61,7 +67,7 @@ pub async fn test_rpc_single() {
             .rpc("test_add_numbers", json!({"a": 5, "b": 3}))
             .execute_single()
             .await
-            .map_err(|e| format!("Add numbers failed: {:?}", e))?;
+            .map_err(|e| crate::Error::Configuration(format!("Add numbers failed: {:?}", e)))?;
 
         assert_eq!(result.as_i64().unwrap(), 8);
         println!("✅ RPC add_numbers test passed");
@@ -74,7 +80,7 @@ pub async fn test_rpc_single() {
             )
             .execute_single()
             .await
-            .map_err(|e| format!("JSON echo failed: {:?}", e))?;
+            .map_err(|e| crate::Error::Configuration(format!("JSON echo failed: {:?}", e)))?;
 
         assert_eq!(json_result["key"].as_str().unwrap(), "value");
         assert_eq!(json_result["number"].as_i64().unwrap(), 42);
@@ -94,17 +100,20 @@ pub async fn test_rpc_single() {
         }
     };
 
-    let response: Result<(), String> = rpc_single_inner(supabase_client).await;
+    let response = rpc_single_inner(supabase_client).await;
     response.unwrap();
 }
 
 pub async fn test_rpc_void() {
     /// Tests the execute_void() method
-    async fn rpc_void_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn rpc_void_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Setup RPC functions first
         if let Err(e) = setup_rpc_functions().await {
             eprintln!("Failed to setup RPC functions: {:?}", e);
-            return Err(format!("Setup failed: {:?}", e));
+            return Err(crate::Error::Configuration(format!(
+                "Setup failed: {:?}",
+                e
+            )));
         }
 
         // Test void function
@@ -120,7 +129,10 @@ pub async fn test_rpc_void() {
             }
             Err(e) => {
                 eprintln!("RPC void function test failed: {:?}", e);
-                Err(format!("RPC void failed: {:?}", e))
+                Err(crate::Error::Configuration(format!(
+                    "RPC void failed: {:?}",
+                    e
+                )))
             }
         }
     }
@@ -136,29 +148,32 @@ pub async fn test_rpc_void() {
         }
     };
 
-    let response: Result<(), String> = rpc_void_inner(supabase_client).await;
+    let response = rpc_void_inner(supabase_client).await;
     response.unwrap();
 }
 
 pub async fn test_rpc_with_filters() {
     /// Tests RPC with filter methods
-    async fn rpc_filters_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn rpc_filters_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Setup RPC functions first
         if let Err(e) = setup_rpc_functions().await {
             eprintln!("Failed to setup RPC functions: {:?}", e);
-            return Err(format!("Setup failed: {:?}", e));
+            return Err(crate::Error::Configuration(format!(
+                "Setup failed: {:?}",
+                e
+            )));
         }
 
         // First, insert some test data to filter
-        let _ = supabase_client
+        supabase_client
             .insert("test", json!({"dog": "filter_test_1", "value": 10}))
-            .await;
-        let _ = supabase_client
+            .await?;
+        supabase_client
             .insert("test", json!({"dog": "filter_test_2", "value": 20}))
-            .await;
-        let _ = supabase_client
+            .await?;
+        supabase_client
             .insert("test", json!({"dog": "filter_test_3", "value": 30}))
-            .await;
+            .await?;
 
         // Test set-returning function with filters
         let response_inner = supabase_client
@@ -200,18 +215,22 @@ pub async fn test_rpc_with_filters() {
         }
     };
 
-    let response: Result<(), String> = rpc_filters_inner(supabase_client).await;
+    let response = rpc_filters_inner(supabase_client).await;
     response.unwrap();
 }
 
 /// Test type generation integration for RPC functions
+#[cfg(feature = "typegen")]
 pub async fn test_rpc_type_generation() {
     /// Tests that type generation works with RPC functions
-    async fn type_gen_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn type_gen_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // Setup RPC functions first
         if let Err(e) = setup_rpc_functions().await {
             eprintln!("Failed to setup RPC functions: {:?}", e);
-            return Err(format!("Setup failed: {:?}", e));
+            return Err(crate::Error::Configuration(format!(
+                "Setup failed: {:?}",
+                e
+            )));
         }
 
         // Note: This test doesn't actually generate types, but verifies that
@@ -224,7 +243,9 @@ pub async fn test_rpc_type_generation() {
             .rpc("test_greet", json!({}))
             .execute_single()
             .await
-            .map_err(|e| format!("Greet with default failed: {:?}", e))?;
+            .map_err(|e| {
+                crate::Error::Configuration(format!("Greet with default failed: {:?}", e))
+            })?;
 
         assert_eq!(result.as_str().unwrap(), "Hello, World!");
         println!("✅ RPC with default parameter test passed");
@@ -234,7 +255,9 @@ pub async fn test_rpc_type_generation() {
             .rpc("test_greet", json!({"name": "Rust"}))
             .execute_single()
             .await
-            .map_err(|e| format!("Greet with explicit param failed: {:?}", e))?;
+            .map_err(|e| {
+                crate::Error::Configuration(format!("Greet with explicit param failed: {:?}", e))
+            })?;
 
         assert_eq!(result.as_str().unwrap(), "Hello, Rust!");
         println!("✅ RPC with explicit parameter test passed");
@@ -253,6 +276,6 @@ pub async fn test_rpc_type_generation() {
         }
     };
 
-    let response: Result<(), String> = type_gen_inner(supabase_client).await;
+    let response = type_gen_inner(supabase_client).await;
     response.unwrap();
 }

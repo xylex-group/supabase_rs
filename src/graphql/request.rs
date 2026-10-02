@@ -62,11 +62,6 @@ impl Request {
         #[cfg(not(feature = "rustls"))]
         let client = Client::new();
 
-        #[cfg(feature = "nightly")]
-        use crate::nightly::print_nightly_warning;
-        #[cfg(feature = "nightly")]
-        print_nightly_warning();
-
         let res = client
             .post(&endpoint_graphql)
             .header(

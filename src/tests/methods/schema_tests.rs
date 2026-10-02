@@ -51,7 +51,7 @@ pub async fn test_custom_schema_zeus() {
 
 /// Test schema functionality with select operation (Accept-Profile header)
 pub async fn test_schema_with_select() {
-    async fn select_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn select_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // This should use Accept-Profile: zeus header
         let response = supabase_client.select("test").execute().await;
 
@@ -86,7 +86,7 @@ pub async fn test_schema_with_select() {
 
 /// Test schema functionality with insert operation (Content-Profile header)
 pub async fn test_schema_with_insert() {
-    async fn insert_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn insert_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         let test_data = json!({
             "name": "Zeus Test",
             "value": 42
@@ -126,7 +126,7 @@ pub async fn test_schema_with_insert() {
 
 /// Test schema functionality with update operation (Content-Profile header)
 pub async fn test_schema_with_update() {
-    async fn update_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn update_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         let test_data = json!({
             "name": "Zeus Test Updated",
             "value": 84
@@ -166,7 +166,7 @@ pub async fn test_schema_with_update() {
 
 /// Test schema functionality with upsert operation (Content-Profile header)
 pub async fn test_schema_with_upsert() {
-    async fn upsert_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn upsert_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         let test_data = json!({
             "name": "Zeus Upsert Test",
             "value": 123
@@ -208,7 +208,7 @@ pub async fn test_schema_with_upsert() {
 
 /// Test schema functionality with delete operation (Content-Profile header)
 pub async fn test_schema_with_delete() {
-    async fn delete_inner(supabase_client: SupabaseClient) -> Result<(), String> {
+    async fn delete_inner(supabase_client: SupabaseClient) -> crate::Result<()> {
         // This should use Content-Profile: zeus header
         let response = supabase_client.delete("test", "zeus_test_id").await;
 
