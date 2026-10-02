@@ -1,7 +1,40 @@
 # supabase_rs
 
-Rust SDK for interacting with the Supabase REST and GraphQL APIs. 
-provides a clean, chainable query-builder interface with comprehensive CRUD operations, advanced filtering capabilities.
+[![Crates.io](https://img.shields.io/crates/v/supabase_rs.svg)](https://crates.io/crates/supabase_rs)
+[![docs.rs](https://docs.rs/supabase_rs/badge.svg)](https://docs.rs/supabase_rs)
+[![CI](https://github.com/floris-xlx/supabase_rs/actions/workflows/rust.yml/badge.svg)](https://github.com/floris-xlx/supabase_rs/actions/workflows/rust.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+**Unofficial** Rust client for [Supabase](https://supabase.com) PostgREST—async CRUD, fluent filters, joins, RPC, and optional storage/GraphQL. Maintained by the author; widely used on [crates.io](https://crates.io/crates/supabase_rs) (~90k+ downloads).
+
+**Repository:** [github.com/floris-xlx/supabase_rs](https://github.com/floris-xlx/supabase_rs)
+
+```toml
+[dependencies]
+supabase_rs = "0.7.0"
+```
+
+```rust
+use supabase_rs::SupabaseClient;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = SupabaseClient::new(
+        std::env::var("SUPABASE_URL")?,
+        std::env::var("SUPABASE_KEY")?,
+    )?;
+
+    let rows = client
+        .from("countries")
+        .select("*")
+        .eq("region", "Europe")
+        .execute()
+        .await?;
+
+    println!("{rows:?}");
+    Ok(())
+}
+```
 
 ## Key Features
 
@@ -41,29 +74,29 @@ Add the crate to your project using Cargo:
 
 ```toml
 [dependencies]
-supabase_rs = "0.4.14"
+supabase_rs = "0.7.0"
 
 # With optional features
-supabase_rs = { version = "0.4.14", features = ["storage", "rustls"] }
+supabase_rs = { version = "0.7.0", features = ["storage", "rustls"] }
 ```
 
 ### Feature Combinations
 
 ```toml
 # Basic REST API only (default)
-supabase_rs = "0.4.14"
+supabase_rs = "0.7.0"
 
 # With Storage support
-supabase_rs = { version = "0.4.14", features = ["storage"] }
+supabase_rs = { version = "0.7.0", features = ["storage"] }
 
 # With rustls instead of OpenSSL (recommended for cross-platform)
-supabase_rs = { version = "0.4.14", features = ["rustls"] }
+supabase_rs = { version = "0.7.0", features = ["rustls"] }
 
 # With experimental GraphQL support (nightly)
-supabase_rs = { version = "0.4.14", features = ["nightly"] }
+supabase_rs = { version = "0.7.0", features = ["nightly"] }
 
 # All features enabled
-supabase_rs = { version = "0.4.14", features = ["storage", "rustls", "nightly"] }
+supabase_rs = { version = "0.7.0", features = ["storage", "rustls", "nightly"] }
 ```
 
 ### Environment Setup

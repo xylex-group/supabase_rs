@@ -32,5 +32,5 @@ pub async fn select_single() {
     };
 
     let result = select_single_inner(client).await;
-    assert!(result.is_ok());
+    result.unwrap();
 }

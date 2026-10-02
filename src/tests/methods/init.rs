@@ -21,11 +21,11 @@ pub async fn setup_rpc_functions() -> Result<()> {
 
     // Try to get database credentials from environment variables
     // Default to local Supabase credentials
-    let db_host = var("SUPABASE_DB_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let db_port = var("SUPABASE_DB_PORT").unwrap_or_else(|_| "5432".to_string());
-    let db_user = var("SUPABASE_DB_USER").unwrap_or_else(|_| "postgres".to_string());
-    let db_password = var("SUPABASE_DB_PASSWORD").unwrap_or_else(|_| "postgres".to_string());
-    let db_name = var("SUPABASE_DB_NAME").unwrap_or_else(|_| "postgres".to_string());
+    let db_host = var("SUPABASE_DB_HOST").unwrap_or_else(|_| "127.0.0.1".to_owned());
+    let db_port = var("SUPABASE_DB_PORT").unwrap_or_else(|_| "5432".to_owned());
+    let db_user = var("SUPABASE_DB_USER").unwrap_or_else(|_| "postgres".to_owned());
+    let db_password = var("SUPABASE_DB_PASSWORD").unwrap_or_else(|_| "postgres".to_owned());
+    let db_name = var("SUPABASE_DB_NAME").unwrap_or_else(|_| "postgres".to_owned());
 
     // Read SQL file
     let sql_content = fs::read_to_string("src/tests/setup_rpc.sql").map_err(|e| {
