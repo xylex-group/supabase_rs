@@ -414,56 +414,38 @@ impl Query {
     /// query.add_param("name", "John Doe");
     /// query.add_param("age", "30");
     /// let query_string = query.build();
-    /// assert_eq!(query_string, "name=John Doe&age=30");
+    /// assert_eq!(query_string, "name=John+Doe&age=30");
     /// ```
     pub fn build(&self) -> String {
-        self.params
-            .iter()
-            .map(|(key, value)| format!("{key}={value}&"))
-            .collect::<Vec<String>>()
-            .join("");
-
-        let mut query_string: String = String::new();
-
-        // add params
-        query_string.push_str(
-            self.params
-                .iter()
-                .map(|(key, value)| format!("{key}={value}"))
-                .collect::<Vec<String>>()
-                .join("&")
-                .as_str(),
-        );
-
-        if !self.filters.is_empty() {
-            // add filters
-            if !query_string.is_empty() {
-                query_string.push('&');
-            }
-            query_string.push_str(
-                self.filters
-                    .iter()
-                    .map(|filter| filter.to_string())
-                    .collect::<Vec<String>>()
-                    .join("&")
-                    .as_str(),
-            );
-        }
+        let mut pairs = self.params.clone();
+        pairs.extend(self.filters.iter().map(|filter| {
+            let operator = match filter.operator {
+                crate::query::Operator::Equals => "eq",
+                crate::query::Operator::NotEquals => "neq",
+                crate::query::Operator::GreaterThan => "gt",
+                crate::query::Operator::LessThan => "lt",
+                crate::query::Operator::GreaterThanOrEquals => "gte",
+                crate::query::Operator::LessThanOrEquals => "lte",
+            };
+            (
+                format!("{}.{}", filter.column, operator),
+                filter.value.clone(),
+            )
+        }));
         if !self.sorts.is_empty() {
-            // add sorts
-            if !query_string.is_empty() {
-                query_string.push('&');
-            }
-
-            query_string.push_str(
+            pairs.push((
+                "order".to_owned(),
                 self.sorts
                     .iter()
-                    .map(|sort| sort.to_string())
-                    .collect::<Vec<String>>()
-                    .join("&")
-                    .as_str(),
-            );
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join(","),
+            ));
         }
-        query_string
+        crate::query::url_with_query_pairs("http://query.invalid", pairs)
+            .expect("static query URL is valid")
+            .query()
+            .unwrap_or_default()
+            .to_owned()
     }
 }

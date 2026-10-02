@@ -76,6 +76,21 @@ async fn select_http_contract() {
 }
 
 #[tokio::test]
+async fn select_encodes_filter_keys_and_values() {
+    let (url, server) = mock_response("200 OK", "Content-Type: application/json\r\n", "[]");
+    client(url)
+        .select("users")
+        .eq("name&select", "Ada&role=eq.admin")
+        .execute()
+        .await
+        .expect("select response");
+    let request = server.join().expect("HTTP server").to_ascii_lowercase();
+
+    assert!(request
+        .starts_with("get /rest/v1/users?name%26select=eq.ada%26role%3deq.admin http/1.1\r\n"));
+}
+
+#[tokio::test]
 async fn insert_http_contract() {
     let (url, server) = mock_response(
         "201 Created",
@@ -97,30 +112,83 @@ async fn insert_http_contract() {
 
 #[tokio::test]
 async fn update_http_contract() {
-    let (url, server) = mock_response("204 No Content", "", "");
-    client(url)
+    let (url, server) = mock_response(
+        "200 OK",
+        "Content-Type: application/json\r\nContent-Range: 0-0/1\r\n",
+        "[{\"id\":\"u1\"}]",
+    );
+    let result = client(url)
         .update("users", "u1", json!({"name": "Ada Lovelace"}))
         .await
         .expect("update response");
     let request = server.join().expect("HTTP server").to_ascii_lowercase();
 
+    assert_eq!(result.affected, 1);
     assert!(request.starts_with("patch /rest/v1/users?id=eq.u1 http/1.1\r\n"));
     assert!(request.contains("content-profile: tenant\r\n"));
+    assert!(request.contains("prefer: count=exact,return=representation\r\n"));
     assert!(request.ends_with("{\"name\":\"ada lovelace\"}"));
 }
 
 #[tokio::test]
+async fn update_encodes_filter_values_and_requests_affected_rows() {
+    let (url, server) = mock_response(
+        "200 OK",
+        "Content-Type: application/json\r\nContent-Range: */0\r\n",
+        "[]",
+    );
+    let result = client(url)
+        .update_with_column_name(
+            "users",
+            "id",
+            "123&role=eq.admin",
+            json!({"name": "Updated"}),
+        )
+        .await
+        .expect("update response");
+    let request = server.join().expect("HTTP server").to_ascii_lowercase();
+
+    assert_eq!(result.affected, 0);
+    assert!(request.starts_with("patch /rest/v1/users?id=eq.123%26role%3deq.admin http/1.1\r\n"));
+    assert!(request.contains("prefer: count=exact,return=representation\r\n"));
+}
+
+#[tokio::test]
 async fn delete_http_contract() {
-    let (url, server) = mock_response("204 No Content", "", "");
-    client(url)
+    let (url, server) = mock_response(
+        "200 OK",
+        "Content-Type: application/json\r\nContent-Range: 0-0/1\r\n",
+        "[{\"id\":\"u1\"}]",
+    );
+    let result = client(url)
         .delete("users", "u1")
         .await
         .expect("delete response");
     let request = server.join().expect("HTTP server").to_ascii_lowercase();
 
+    assert_eq!(result.affected, 1);
     assert!(request.starts_with("delete /rest/v1/users?id=eq.u1 http/1.1\r\n"));
     assert!(request.contains("content-profile: tenant\r\n"));
+    assert!(request.contains("prefer: count=exact,return=representation\r\n"));
     assert!(request.ends_with("{}"));
+}
+
+#[tokio::test]
+async fn delete_encodes_filter_values_and_requests_affected_rows() {
+    let (url, server) = mock_response(
+        "200 OK",
+        "Content-Type: application/json\r\nContent-Range: */0\r\n",
+        "[]",
+    );
+    let result = client(url)
+        .delete_without_defined_key("users", "id", "123&role=eq.admin")
+        .await
+        .expect("delete response");
+    let request = server.join().expect("HTTP server").to_ascii_lowercase();
+
+    assert_eq!(result.affected, 0);
+    assert!(request.starts_with("delete /rest/v1/users?id=eq.123%26role%3deq.admin http/1.1\r\n"));
+    assert!(request.contains("prefer: count=exact,return=representation\r\n"));
 }
 
 #[cfg(feature = "rpc")]
@@ -139,4 +207,21 @@ async fn rpc_http_contract() {
     assert!(request.contains("content-profile: tenant\r\n"));
     assert!(request.contains("accept-profile: tenant\r\n"));
     assert!(request.ends_with("{\"left\":3,\"right\":4}"));
+}
+
+#[cfg(feature = "rpc")]
+#[tokio::test]
+async fn rpc_encodes_filter_keys_and_values() {
+    let (url, server) = mock_response("200 OK", "Content-Type: application/json\r\n", "[]");
+    client(url)
+        .rpc("list_users", json!({}))
+        .eq("name&select", "Ada&role=eq.admin")
+        .execute()
+        .await
+        .expect("RPC response");
+    let request = server.join().expect("HTTP server").to_ascii_lowercase();
+
+    assert!(request.starts_with(
+        "post /rest/v1/rpc/list_users?name%26select=eq.ada%26role%3deq.admin http/1.1\r\n"
+    ));
 }

@@ -322,7 +322,11 @@ impl SupabaseClient {
         self.insert(table_name, body).await
     }
 
-    /// Inserts a row into the specified table if the value is unique and does not exist in the table already.
+    /// Inserts a row after checking that no matching row currently exists.
+    ///
+    /// This check is not atomic. Concurrent calls can both pass the check, so use a database
+    /// unique constraint as the authority when uniqueness must be guaranteed. PostgREST errors
+    /// from the insert, including unique-constraint violations, are returned unchanged.
     ///
     /// # Arguments
     /// * `table_name` - A string slice that holds the name of the table.
@@ -346,7 +350,8 @@ impl SupabaseClient {
     /// ```
     ///
     /// # Returns
-    /// Returns the inserted row's ID or a typed SDK error. If matching rows already exist, returns an input error.
+    /// Returns the inserted row's ID or a typed SDK error. If a matching row is found by the
+    /// preflight query, returns an input error.
     pub async fn insert_if_unique<T>(&self, table_name: &str, body: T) -> Result<String>
     where
         T: serde::Serialize + Clone,
@@ -387,7 +392,7 @@ impl SupabaseClient {
         }
 
         Err(Error::InvalidInput(
-            "a matching row already exists".to_owned(),
+            "a matching row was found by the preflight check".to_owned(),
         ))
     }
 

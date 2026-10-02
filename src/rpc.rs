@@ -333,12 +333,10 @@ impl RpcBuilder {
         let url = self.client.rpc_endpoint(&self.function_name);
 
         // Build query string from filters
-        let query_string = self.query.build();
-        let endpoint = if query_string.is_empty() {
-            url
-        } else {
-            format!("{}?{}", url, query_string)
-        };
+        let endpoint = crate::query::url_with_query_pairs(
+            &url,
+            crate::query::parse_query_pairs(&self.query.build()),
+        )?;
 
         // create headers with default values
         let mut headers = default_headers(&self.client.api_key, &self.client.api_key)?;
@@ -367,7 +365,7 @@ impl RpcBuilder {
         let response = self
             .client
             .client
-            .post(&endpoint)
+            .post(endpoint)
             .headers(headers)
             .json(&params)
             .send()

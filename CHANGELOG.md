@@ -1,13 +1,14 @@
+# Changelog
+
 ## [0.8.0] (unreleased)
 
 ### Changed
 
 - Unified public operations on typed SDK errors and added structured API response context.
 - Kept PostgREST counts as response metadata instead of synthetic rows.
+- Added affected-row counts to update and delete results and URL-encoded PostgREST query parameters.
 - Added explicit client configuration and shared client-backed Storage downloads.
 - Made RPC, Storage, GraphQL, and type generation optional features; GraphQL remains experimental.
-# Changelog
-
 ## [0.7.0](https://github.com/xylex-group/supabase_rs/compare/v0.6.0...v0.7.0) (2026-03-05)
 
 

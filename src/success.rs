@@ -44,6 +44,13 @@ pub struct ResponseData<T> {
     pub count: Option<u64>,
 }
 
+/// Number of rows affected by a single-table mutation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MutationResult {
+    /// Number of rows affected, from PostgREST count metadata or returned rows.
+    pub affected: u64,
+}
+
 /// Represents a structured error response from the Supabase API.
 ///
 /// This struct captures all error information that Supabase returns, including

@@ -92,7 +92,9 @@
 //! ```
 
 // local imports
+use crate::errors::{Error, Result};
 use crate::SupabaseClient;
+use reqwest::Url;
 
 // Re-export join types for structured nested selects
 pub use crate::query_builder::join::{JoinModifier, JoinSpec};
@@ -293,6 +295,27 @@ pub struct Query {
     pub sorts: Vec<Sort>,
     /// Optional pagination range (from_index, to_index)
     pub range: Option<(usize, usize)>,
+}
+
+pub(crate) fn url_with_query_pairs(
+    endpoint: &str,
+    pairs: impl IntoIterator<Item = (String, String)>,
+) -> Result<Url> {
+    let mut url = Url::parse(endpoint)
+        .map_err(|error| Error::Configuration(format!("invalid request URL: {error}")))?;
+    let pairs = pairs.into_iter().collect::<Vec<_>>();
+    if !pairs.is_empty() {
+        url.query_pairs_mut().extend_pairs(pairs);
+    }
+    Ok(url)
+}
+
+pub(crate) fn parse_query_pairs(query: &str) -> Vec<(String, String)> {
+    let mut url = Url::parse("http://query.invalid").expect("static URL is valid");
+    url.set_query(Some(query));
+    url.query_pairs()
+        .map(|(key, value)| (key.into_owned(), value.into_owned()))
+        .collect()
 }
 
 /// Fluent query builder for constructing and executing database queries.

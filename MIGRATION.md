@@ -28,6 +28,19 @@ let rows = response.data;
 let total = response.count;
 ```
 
+## Mutation results and encoded filters
+
+`update`, `update_with_column_name`, `delete`, and `delete_without_defined_key` now return `MutationResult` instead of the supplied ID or unit. Inspect `affected` to distinguish a matching row from a successful request that matched none:
+
+```rust
+let result = client.update("users", "u1", serde_json::json!({"active": true})).await?;
+if result.affected == 0 {
+    println!("No row matched");
+}
+```
+
+These methods request the affected-row representation from PostgREST. Query builders and mutation filters now URL-encode parameter keys and values. `Query::build()` returns an encoded query string, and structured sort criteria use PostgREST's `order=column.asc` parameter.
+
 ## Client configuration
 
 `SupabaseClient::new(url, key)` remains supported. Use the builder for explicit schema, REST prefix, or a reusable `reqwest::Client`:

@@ -14,8 +14,8 @@
 //!
 //! | Method | Targeting | Behavior | Return Type | Use Case |
 //! |--------|-----------|----------|-------------|----------|
-//! | `update` | By ID | Updates existing record | `Result<(), Box<dyn std::error::Error>>` | Standard updates |
-//! | `update_with_column_name` | By custom column | Updates matching record | `Result<(), Box<dyn std::error::Error>>` | Flexible targeting |
+//! | `update` | By ID | Updates matching rows | `Result<MutationResult>` | Standard updates |
+//! | `update_with_column_name` | By custom column | Updates matching rows | `Result<MutationResult>` | Flexible targeting |
 //! | `upsert` | By ID | Insert or update | `Result<(), Box<dyn std::error::Error>>` | Idempotent operations |
 //! | `upsert_without_defined_key` | Auto-detect | Insert or update | `Result<(), Box<dyn std::error::Error>>` | Conflict resolution |
 //!
@@ -41,13 +41,13 @@
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! // Update by ID (most common)
-//! let updated_id = client.update("users", "123", json!({
+//! let result = client.update("users", "123", json!({
 //!     "name": "Alice Smith",
 //!     "last_login": "2024-01-15T10:30:00Z",
 //!     "login_count": 42
 //! })).await?;
 //!
-//! println!("Updated user with ID: {}", updated_id);
+//! println!("Updated {} row(s)", result.affected);
 //! # Ok(())
 //! # }
 //! ```
@@ -139,11 +139,9 @@
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! # let client = SupabaseClient::new("url".to_string(), "key".to_string()).unwrap();
 //! match client.update("users", "123", json!({"name": "New Name"})).await {
-//!     Ok(id) => println!("✅ Updated user {}", id),
+//!     Ok(result) => println!("Updated {} row(s)", result.affected),
 //!     Err(err) => {
-//!         if matches!(&err, supabase_rs::Error::Api(api) if api.status == 404) {
-//!             println!("⚠️ User not found, consider using upsert");
-//!         } else if matches!(&err, supabase_rs::Error::Api(api) if api.status == 403) {
+//!         if matches!(&err, supabase_rs::Error::Api(api) if api.status == 403) {
 //!             println!("🚫 Permission denied, check RLS policies");
 //!         } else {
 //!             println!("❌ Update failed: {}", err);
@@ -155,13 +153,13 @@
 //! ```
 use crate::errors::Result;
 use crate::request::headers::HeadersTypes;
-use crate::success::handle_response;
+use crate::success::{handle_response, MutationResult};
 use crate::SupabaseClient;
 use serde_json::{json, Value};
 
 impl SupabaseClient {
     /// Updates a row in the table, based on the id
-    pub async fn update(&self, table_name: &str, id: &str, body: Value) -> Result<String> {
+    pub async fn update(&self, table_name: &str, id: &str, body: Value) -> Result<MutationResult> {
         Self::update_with_column_name(self, table_name, "id", id, body).await
     }
 
@@ -172,14 +170,16 @@ impl SupabaseClient {
         column_name: &str,
         id: &str,
         body: Value,
-    ) -> Result<String> {
+    ) -> Result<MutationResult> {
         // endpoint and client construction
-        let endpoint: String = self.endpoint(table_name);
-        let endpoint: String = format!("{endpoint}?{column_name}=eq.{id}");
+        let endpoint = crate::query::url_with_query_pairs(
+            &self.endpoint(table_name),
+            [(column_name.to_owned(), format!("eq.{id}"))],
+        )?;
 
         let response = self
             .client
-            .patch(&endpoint)
+            .patch(endpoint)
             .header(HeadersTypes::ApiKey, &self.api_key)
             .header(
                 HeadersTypes::Authorization,
@@ -188,12 +188,18 @@ impl SupabaseClient {
             .header(HeadersTypes::ContentType, "application/json")
             .header(HeadersTypes::ClientInfo, &crate::client_info())
             .header(HeadersTypes::ContentProfile.as_str(), self.schema.as_str())
+            .header(
+                HeadersTypes::Prefer.as_str(),
+                "count=exact,return=representation",
+            )
             .body(body.to_string())
             .send()
             .await?;
 
-        handle_response(response).await?;
-        Ok(id.to_owned())
+        let response = handle_response(response).await?;
+        Ok(MutationResult {
+            affected: response.count.unwrap_or(response.data.len() as u64),
+        })
     }
 
     /// Creates a row in the table, or updates if the id already exists

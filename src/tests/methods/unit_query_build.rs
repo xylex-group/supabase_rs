@@ -15,8 +15,26 @@ async fn build_orders_params_and_filters() {
     q.add_param("limit", "10");
     let s = q.build();
     // Order between params is insertion order in implementation; we just assert both keys exist
-    assert!(s.contains("select=id,name"));
+    assert!(s.contains("select=id%2Cname"));
     assert!(s.contains("limit=10"));
+}
+
+#[test]
+fn build_encodes_query_keys_and_values() {
+    use crate::query::{Filter, Operator};
+
+    let mut query = crate::query::Query::new();
+    query.add_param("select", "id,name");
+    query.add_filter(Filter {
+        column: "name&select".to_owned(),
+        operator: Operator::Equals,
+        value: "Ada&role=eq.admin".to_owned(),
+    });
+
+    assert_eq!(
+        query.build(),
+        "select=id%2Cname&name%26select.eq=Ada%26role%3Deq.admin"
+    );
 }
 
 #[tokio::test]
@@ -31,8 +49,8 @@ async fn select_with_joins_builds_postgrest_select() {
     );
     let s = qb.query.build();
     assert!(
-        s.contains("select=id,name,instruments!inner(id,name)"),
-        "Expected select=id,name,instruments!inner(id,name), got: {}",
+        s.contains("select=id%2Cname%2Cinstruments%21inner%28id%2Cname%29"),
+        "Expected encoded join select, got: {}",
         s
     );
 }

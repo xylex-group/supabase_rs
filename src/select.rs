@@ -263,17 +263,10 @@ impl SupabaseClient {
         range: Option<(usize, usize)>,
     ) -> Result<ResponseData<Vec<Value>>> {
         // Build the client and the endpoint
-        let endpoint: String = self.endpoint(table_name);
-        let query_string = query_string
-            .split('&')
-            .filter(|parameter| *parameter != "count=exact")
-            .collect::<Vec<_>>()
-            .join("&");
-        let endpoint: String = if query_string.is_empty() {
-            endpoint
-        } else {
-            format!("{endpoint}?{query_string}")
-        };
+        let pairs = crate::query::parse_query_pairs(query_string)
+            .into_iter()
+            .filter(|pair| pair != &("count".to_owned(), "exact".to_owned()));
+        let endpoint = crate::query::url_with_query_pairs(&self.endpoint(table_name), pairs)?;
 
         // create headers with default values
         let mut header_map = default_headers(&self.api_key, &self.api_key)?;
@@ -294,12 +287,7 @@ impl SupabaseClient {
         }
 
         // send the request
-        let response: Response = self
-            .client
-            .get(&endpoint)
-            .headers(header_map)
-            .send()
-            .await?;
+        let response: Response = self.client.get(endpoint).headers(header_map).send().await?;
 
         // process the response
         handle_response(response).await

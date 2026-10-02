@@ -49,7 +49,7 @@ pub mod type_gen;
 pub mod update;
 
 // Re-export commonly used types
-pub use success::{ResponseData, SupabaseErrorResponse};
+pub use success::{MutationResult, ResponseData, SupabaseErrorResponse};
 
 #[cfg(feature = "graphql")]
 pub mod graphql;

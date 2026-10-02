@@ -20,7 +20,7 @@ pub async fn test_query() {
     query.add_sort(sort);
     let query_string: String = query.build();
     assert_eq!(
-        query_string, "age.gt=30&name.asc",
+        query_string, "age.gt=30&order=name.asc",
         "Query string did not match the expected format"
     );
 }
