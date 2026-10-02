@@ -167,7 +167,7 @@ impl RpcBuilder {
     pub fn new<T: Serialize>(client: SupabaseClient, function_name: &str, params: T) -> Self {
         Self {
             client,
-            function_name: function_name.to_string(),
+            function_name: function_name.to_owned(),
             params: serde_json::to_value(params).unwrap_or(json!({})),
             query: Query::new(),
         }
@@ -250,7 +250,10 @@ impl RpcBuilder {
     pub async fn execute_single(self) -> Result<Value> {
         let results = self.execute_internal(true).await?;
         if results.len() == 1 {
-            Ok(results.into_iter().next().unwrap())
+            Ok(results
+                .into_iter()
+                .next()
+                .expect("single result when len is 1"))
         } else {
             Err(crate::errors::ErrorTypes::UnknownError)
         }

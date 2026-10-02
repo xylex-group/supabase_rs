@@ -82,10 +82,10 @@
 //! Add to your `Cargo.toml`:
 //! ```toml
 //! [dependencies]
-//! supabase_rs = "0.4.14"
+//! supabase_rs = "0.7.0"
 //!
 //! # With optional features
-//! supabase_rs = { version = "0.4.14", features = ["storage", "rustls"] }
+//! supabase_rs = { version = "0.7.0", features = ["storage", "rustls"] }
 //! ```
 //!
 //! ## 🚀 Quick Start
@@ -648,6 +648,7 @@ impl SupabaseClient {
     ///
     /// The default format is `"{url}/rest/v1/rpc/{function_name}"`. If the environment variable
     /// `SUPABASE_RS_DONT_REST_V1_URL=true` is set, it becomes `"{url}/rpc/{function_name}"`.
+    #[cfg(feature = "rpc")]
     pub(crate) fn rpc_endpoint(&self, function_name: &str) -> String {
         let dont_use_rest_v1: bool = std::env::var("SUPABASE_RS_DONT_REST_V1_URL")
             .map(|val| val.to_lowercase() == "true")

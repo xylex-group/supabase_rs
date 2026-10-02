@@ -44,7 +44,7 @@ pub async fn test_rpc() {
     };
 
     let response: Result<(), String> = rpc_inner(supabase_client).await;
-    assert!(response.is_ok());
+    response.unwrap();
 }
 
 pub async fn test_rpc_single() {
@@ -95,7 +95,7 @@ pub async fn test_rpc_single() {
     };
 
     let response: Result<(), String> = rpc_single_inner(supabase_client).await;
-    assert!(response.is_ok());
+    response.unwrap();
 }
 
 pub async fn test_rpc_void() {
@@ -137,7 +137,7 @@ pub async fn test_rpc_void() {
     };
 
     let response: Result<(), String> = rpc_void_inner(supabase_client).await;
-    assert!(response.is_ok());
+    response.unwrap();
 }
 
 pub async fn test_rpc_with_filters() {
@@ -201,7 +201,7 @@ pub async fn test_rpc_with_filters() {
     };
 
     let response: Result<(), String> = rpc_filters_inner(supabase_client).await;
-    assert!(response.is_ok());
+    response.unwrap();
 }
 
 /// Test type generation integration for RPC functions
@@ -254,5 +254,5 @@ pub async fn test_rpc_type_generation() {
     };
 
     let response: Result<(), String> = type_gen_inner(supabase_client).await;
-    assert!(response.is_ok());
+    response.unwrap();
 }

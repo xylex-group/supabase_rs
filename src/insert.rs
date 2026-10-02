@@ -211,7 +211,7 @@ impl SupabaseClient {
             .header(HeadersTypes::ApiKey, &self.api_key)
             .header(
                 HeadersTypes::Authorization,
-                format!("Bearer {}", &self.api_key),
+                format!("Bearer {}", self.api_key),
             )
             .header(HeadersTypes::ContentType, "application/json")
             .header(HeadersTypes::ClientInfo, &crate::client_info())
@@ -284,7 +284,7 @@ impl SupabaseClient {
             .header(HeadersTypes::ApiKey, &self.api_key)
             .header(
                 HeadersTypes::Authorization,
-                format!("Bearer {}", &self.api_key),
+                format!("Bearer {}", self.api_key),
             )
             .header(HeadersTypes::ContentType, "application/json")
             .header(HeadersTypes::ClientInfo, &crate::client_info())
@@ -486,7 +486,7 @@ impl SupabaseClient {
             .header(HeadersTypes::ApiKey, &self.api_key)
             .header(
                 HeadersTypes::Authorization,
-                format!("Bearer {}", &self.api_key),
+                format!("Bearer {}", self.api_key),
             )
             .header(HeadersTypes::ContentType, "application/json")
             .header(HeadersTypes::ClientInfo, &crate::client_info())

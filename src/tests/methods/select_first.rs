@@ -33,5 +33,5 @@ pub async fn select_first() {
     };
 
     let result = select_first_inner(client).await;
-    assert!(result.is_ok());
+    result.unwrap();
 }
