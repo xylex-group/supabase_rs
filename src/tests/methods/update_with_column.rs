@@ -7,7 +7,7 @@ pub async fn update_with_column() {
     async fn update_inner(supabase_client: SupabaseClient) -> Result<(), String> {
         // Usage example
 
-        let username: String = "update_me".to_string();
+        let username: String = "update_me".to_owned();
 
         let updated_body: Value = json!({
             "age": 29

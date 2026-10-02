@@ -7,7 +7,7 @@ pub async fn upsert_numeric() {
     async fn upsert_inner(supabase_client: SupabaseClient) -> Result<(), String> {
         // Usage example
 
-        let id: String = "user-upsert-target".to_string();
+        let id: String = "user-upsert-target".to_owned();
 
         let response_inner = supabase_client
             .upsert(

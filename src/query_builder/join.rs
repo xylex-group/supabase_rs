@@ -30,7 +30,7 @@ impl JoinSpec {
     pub fn new(relation: &str, columns: &[&str]) -> Self {
         Self {
             relation: relation.to_owned(),
-            columns: columns.iter().map(|s| (*s).to_string()).collect(),
+            columns: columns.iter().map(|s| (*s).to_owned()).collect(),
             alias: None,
             modifier: None,
         }

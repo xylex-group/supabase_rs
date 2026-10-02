@@ -258,7 +258,9 @@ pub async fn generate_supabase_types_with_schema(
         .into_iter()
         .filter_map(|m| match m {
             SimpleQueryMessage::Row(r) => Some(r),
-            _ => None,
+            SimpleQueryMessage::CommandComplete(_) | SimpleQueryMessage::RowDescription(_) | _ => {
+                None
+            }
         })
         .collect();
 
@@ -266,23 +268,20 @@ pub async fn generate_supabase_types_with_schema(
         let routine_name: String = row
             .get::<usize>(0)
             .expect("routine_name not found")
-            .to_string();
+            .to_owned();
         let parameter_name: String = row
             .get::<usize>(1)
             .expect("parameter_name not found")
-            .to_string();
-        let data_type: String = row
-            .get::<usize>(2)
-            .expect("data_type not found")
-            .to_string();
+            .to_owned();
+        let data_type: String = row.get::<usize>(2).expect("data_type not found").to_owned();
         let _ordinal_position: String = row
             .get::<usize>(3)
             .expect("ordinal_position not found")
-            .to_string();
+            .to_owned();
         let parameter_mode: String = row
             .get::<usize>(4)
             .expect("parameter_mode not found")
-            .to_string();
+            .to_owned();
 
         // Only include IN and INOUT parameters (OUT parameters are not passed as arguments)
         if parameter_mode == "OUT" {
@@ -309,7 +308,7 @@ pub async fn generate_supabase_types_with_schema(
         // We'll assume they're not nullable (required) unless they have a default value
         // For simplicity, we'll generate non-Option types
         // In the future we could check pg_proc.proargdefaults to detect defaults
-        let rust_type = base_rust_type.to_string();
+        let rust_type = base_rust_type.to_owned();
 
         rpc_definitions.entry(routine_name).or_default().push((
             parameter_name,
@@ -427,7 +426,7 @@ pub async fn generate_supabase_types_with_schema(
             let parameters = &rpc_definitions[function];
             let struct_name = format!("{}Args", pascal_case(function));
 
-            output.push_str(&format!("    #[derive(Debug, Serialize, Clone)]\n"));
+            output.push_str("    #[derive(Debug, Serialize, Clone)]\n");
             output.push_str(&format!("    pub struct {} {{\n", struct_name));
 
             for (param_name, rust_type, param_mode) in parameters {
@@ -437,7 +436,7 @@ pub async fn generate_supabase_types_with_schema(
                 }
                 // Add comment about parameter mode if it's INOUT
                 if param_mode == "INOUT" {
-                    output.push_str(&format!("        // INOUT parameter\n"));
+                    output.push_str("        // INOUT parameter\n");
                 }
                 output.push_str(&format!("        pub {field}: {rust_type},\n"));
             }
