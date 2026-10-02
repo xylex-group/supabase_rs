@@ -4,11 +4,12 @@
 
 ### Changed
 
-- Unified public operations on typed SDK errors and added structured API response context.
-- Kept PostgREST counts as response metadata instead of synthetic rows.
-- Added affected-row counts to update and delete results and URL-encoded PostgREST query parameters.
-- Added explicit client configuration and shared client-backed Storage downloads.
-- Made RPC, Storage, GraphQL, and type generation optional features; GraphQL remains experimental.
+- Unified operations on typed SDK errors with structured API response context; validate client configuration up front and redact API keys in `Debug` output.
+- URL-encode PostgREST query parameters and serialize structured filters with `column=operator.value` syntax.
+- Return affected-row counts from update and delete operations; keep select counts as response metadata instead of synthetic rows.
+- Clarify `insert_if_unique` as a non-atomic preflight helper; rely on database unique constraints for guarantees.
+- Improve Storage downloads with shared client-backed requests and async file saves.
+- Make RPC, Storage, GraphQL, and type generation optional features; keep GraphQL experimental and remove the unimplemented Realtime surface.
 ## [0.7.0](https://github.com/xylex-group/supabase_rs/compare/v0.6.0...v0.7.0) (2026-03-05)
 
 
